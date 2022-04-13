@@ -2,8 +2,7 @@
 '''Computes the Cumulative BLEU-1 to BLEU-4 scores
 
 Usage:
-python bleu.py --run_cumulative=true \
-               --weights=0.25,0.25,0.25,0.25 \
+python bleu.py --weights=0.25,0.25,0.25,0.25 \
                --reference=/path/to/csv \
                --hypothesis=/path/to/csv
 '''
@@ -27,7 +26,19 @@ def load_text(csv_path):
 
 
 def compute_corpus_blue(ref, hyp, bleu_weights):
-    '''Computes the corpus bleu score'''
+    '''Computes the corpus bleu score
+
+    Args:
+        ref: list[list[str]]. List of list. Each inner list contains
+            tokens of reference text
+        hyp: list[list[str]]. List of list. each inner list contains
+            tokens of hypothesis text
+        blue_weights: tuple[float]. Weights to be assigned to BLEU-1 to BLEU-4
+            when computing the bleu_score
+
+    Returns:
+        score: float. Weighted bleu_score value b/w reference and hypothesis
+    '''
     score = corpus_bleu(ref, hyp, bleu_weights)
     return score
 
@@ -35,39 +46,24 @@ def compute_corpus_blue(ref, hyp, bleu_weights):
 def main(args):
     '''Main Execution'''
 
+    # load the input reference and hypothesis csvs
     reference = load_text(args.reference)
     hypothesis = load_text(args.hypothesis)
 
-    scores = {}
-    if args.run_cumulative == 'true':
-        cum_bleu_weights = [(1, 0, 0, 0),
-                            (0.5, 0.5, 0, 0),
-                            (0.33, 0.33, 0.33, 0),
-                            (0.25, 0.25, 0.25, 0.25)]
+    # parse the bleu_score weights. Must be passed as tuple of floats
+    bleu_weights = args.weights.split(",")
+    bleu_weights = tuple([float(x) for x in bleu_weights])
 
-        for idx, bleu_weights in enumerate(cum_bleu_weights, start=1):
-            score = compute_corpus_blue(reference, hypothesis, bleu_weights)
-            scores[f'BLEU-{idx}'] = score
-    else:
-        # parse the bleu_score weights. Must be passed as tuple of floats
-        bleu_weights = args.weights.split(",")
-        bleu_weights = (float(x) for x in bleu_weights)
+    if sum(bleu_weights) != 1.0:
+        raise ValueError(f"The bleu weights provided must sum to 1. Sum={sum(bleu_weights)}")
 
-        if sum(bleu_weights) != 1.0:
-            raise ValueError(f"The bleu weights provided must sum to 1. Sum={sum(bleu_weights)}")
+    score = compute_corpus_blue(reference, hypothesis, bleu_weights)
+    return score
 
-        score = compute_corpus_blue(reference, hypothesis, bleu_weights)
-        scores['BLEU'] = score
-
-    return scores
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser("Arguments for BLEU score computation")
 
-    parser.add_argument('--run_cumulative', help='''specify if cumulative BLEU-1
-                        to BLEU-4 should be computed''',
-                        default='false',
-                        choices=['true', 'false'])
     parser.add_argument('--reference', help='''path to reference csv''',
                         default=None,
                         required=True)
@@ -83,10 +79,6 @@ if __name__ == '__main__':
 
     bleu_score = main(args)
 
-    print("*" * 50)
-    print(f"SUMMARY OF BLEU METRICS")
-    print("*" * 50)
-    for k, v in bleu_score.items():
-        print(f"{k}: {v}")
-
-    print("-|-" * 20)
+    print("*" * 40)
+    print(f"BLEU SCORE: {bleu_score}")
+    print("-|-" * 15)
