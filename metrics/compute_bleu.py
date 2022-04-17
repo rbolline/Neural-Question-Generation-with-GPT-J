@@ -20,12 +20,12 @@ def load_text(csv_path):
     """Loads the ref/hyp from the input csv"""
     df = pd.read_csv(csv_path)
     reference_texts = df['reference_text'].str.split().values.tolist()
-    hypothesis_texts = df['reference_text'].str.split().values.tolist()
+    hypothesis_texts = df['hypothesis_text'].str.split().values.tolist()
 
     return reference_texts, hypothesis_texts
 
 
-def compute_corpus_blue(ref, hyp, bleu_weights):
+def compute_corpus_bleu(ref, hyp, bleu_weights):
     '''Computes the corpus bleu score
 
     Args:
@@ -56,7 +56,7 @@ def main(args):
     if round(sum(bleu_weights), 1) != 1.0:
         raise ValueError(f"The bleu weights provided must sum to 1. Sum={sum(bleu_weights)}")
 
-    score = compute_corpus_blue(reference_texts, hypothesis_texts, bleu_weights)
+    score = compute_corpus_bleu(reference_texts, hypothesis_texts, bleu_weights)
     return score
 
 
