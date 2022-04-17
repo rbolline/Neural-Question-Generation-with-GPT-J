@@ -23,7 +23,7 @@ def load_text(csv_path):
 
 
 def compute_rouge_score_helper(ref, hyp, scorer):
-    '''Computes the ROUGE-L score
+    '''Defines the ROUGE-L operation for each row in input_csv
 
     Args:
         ref: str. Reference text against which hypothesis is compared
