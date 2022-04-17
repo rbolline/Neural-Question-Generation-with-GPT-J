@@ -4,6 +4,7 @@ import string
 
 import torch
 from torch.utils.data import Dataset
+from util_methods import encode_data
 
 from datasets import load_dataset
 
@@ -45,5 +46,5 @@ class RaceDataset(Dataset):
         # val_df = 
         # Etc...
         self.processed = True
-        return val_df
+        self.dataset = val_df
 
