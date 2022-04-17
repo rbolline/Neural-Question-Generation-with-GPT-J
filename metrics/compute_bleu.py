@@ -2,7 +2,8 @@
 '''Computes the Cumulative BLEU-1 to BLEU-4 scores
 
 Usage:
-python bleu.py --input_csv=/path/to/input/csv --weights=0.25,0.25,0.25,0.25
+python compute_bleu.py --input_csv=/path/to/input/csv \
+                       --weights=0.25,0.25,0.25,0.25
 '''
 
 from __future__ import absolute_import
