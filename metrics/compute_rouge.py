@@ -2,7 +2,7 @@
 '''Computes the ROUGE-L Score
 
 Usage:
-python rouge.py --input_csv=/path/to/input/csv --use_stemmer=true
+python compute_rouge.py --input_csv=/path/to/input/csv --use_stemmer=True
 '''
 
 from __future__ import absolute_import
