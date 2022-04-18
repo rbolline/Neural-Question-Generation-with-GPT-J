@@ -32,10 +32,12 @@ def encode_data(dataset, tokenizer, max_seq_length=128):
     ## TODO: Tokenize the questions and passages using both truncation and padding.
     ## Use the tokenizer provided in the argument and see the code comments above for
     ## more details.
-    print(dataset[['question', 'article', 'answer']].values.tolist()[:5])
-    out = tokenizer.batch_encode_plus(dataset[['question', 'article', 'answer']].values.tolist(), 
+    # print(dataset[['question', 'article', 'answer']].values.tolist()[:5])
+    dataset['combined_context'] = dataset['article'] + dataset['question']
+    print(dataset[['combined_context', 'answer']].values.tolist()[:2])
+    out = tokenizer.batch_encode_plus(dataset[['combined_context', 'answer']].values.tolist(), 
                                       max_length=max_seq_length, 
-                                      truncation=True,
+                                      truncation=True, padding=True,
                                       return_tensors='pt')
     return out
 

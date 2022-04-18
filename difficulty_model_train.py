@@ -11,13 +11,14 @@ import util_methods
 
 # Set up tokenizer
 tokenizer = GPT2Tokenizer.from_pretrained("EleutherAI/gpt-j-6B")
+tokenizer.add_special_tokens({'pad_token': '[PAD]'})
 # model = GPTJForSequenceClassification.from_pretrained("EleutherAI/gpt-j-6B")
 # model = AutoModelForCausalLM.from_pretrained("bert-base-uncased")
 
 # Generate encoded train data
 train = RaceDataset('train')
 train.preprocess_dataset()
-train_df = train.dataset.iloc[:2000]
+train_df = train.dataset
 train_labels = train_df['example_id'].map(lambda x: 'high' if 'high' in x else 'middle')
 train_df['label'] = train_labels
 train_df = train_df.drop(columns=['example_id'])
@@ -26,7 +27,7 @@ train_data = util_methods.encode_data(train_df, tokenizer)
 # Generate encoded eval data
 val = RaceDataset('validation')
 val.preprocess_dataset()
-val_df = val.dataset.iloc[:500]
+val_df = val.dataset
 val_labels = val_df['example_id'].map(lambda x: 'high' if 'high' in x else 'middle')
 val_df['label'] = val_labels
 val_df = val_df.drop(columns=['example_id'])
@@ -49,7 +50,7 @@ preds = []
 eval_pred = EvalPrediction(train_data, train_df['label'])
 
 trainer = Trainer(
-    model=util_methods.model_init,
+    model=util_methods.model_init(),
     args=t_args,
     train_dataset=train_data,
     eval_dataset=val_data,

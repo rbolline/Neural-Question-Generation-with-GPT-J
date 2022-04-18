@@ -12,7 +12,7 @@ class RaceDataset(Dataset):
 
     def __init__(self, split: string):
         # Load and convert dataset from pyarrow to pandas df
-        self.dataset = load_dataset('race', 'all')[split].to_pandas()
+        self.dataset = load_dataset('race', 'all')[split].to_pandas().iloc[:1000]
         self.processed = False
 
     def __len__(self):
@@ -24,6 +24,10 @@ class RaceDataset(Dataset):
     def drop_numeric(self, df):
         # Map letter answers to options list indices
         df['answer'] = df['answer'].map({'A':0, 'B':1, 'C':2, 'D':3})
+        # Replace list comprehension for speed
+        for i in range(len(df['answer'])):
+            df['answer'].iat[i] = (df['options'].iat[i])[df['answer'].iat[i]]
+        print(df['answer'].iat[1])
         options_series = df['options']
 
         def is_valid_options(options_list):
