@@ -57,13 +57,21 @@ class RaceDataset(Dataset):
 
     def filter_dataset(self, df_split):
         # Continue to add preprocessing steps
-        # Rule 1
-        val_df = self.drop_numeric(df_split)
-        # Rule 2
-        # val_df =
-        # Etc...
+        
+        ## Rule 1: Drop numeric
+        df = self.drop_numeric(df_split)
+        
+        ## Rule 2: Exclude phrase completion questions
+        df = df[ ~df['question'].str.contains('_')]
+
+        ## Rule 3: Exclude "According to the passage" questions
+        df = df[ ~df['question'].str.contains('According to the passage')]
+
+        ## Rule 4: Exclude questions shorter than 5 words
+        df = df[ df.question.str.replace(',','').str.split().str.len() > 5 ]
+        
         self.processed = True
-        self.dataset = val_df
+        self.dataset = df
 
     def drop_numeric(self, df):
         options_series = df['options']
