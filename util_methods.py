@@ -3,7 +3,7 @@ from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 import numpy as np
 import torch
 
-from transformers import GPTJForSequenceClassification, AutoModelForCausalLM
+from transformers import GPTJForSequenceClassification, AutoModelForCausalLM, RobertaForSequenceClassification
 
 # Modified methods from DSGA1012 Lab 3
 
@@ -34,7 +34,7 @@ def encode_data(dataset, tokenizer, max_seq_length=128):
     ## more details.
     # print(dataset[['question', 'article', 'answer']].values.tolist()[:5])
     dataset['combined_context'] = dataset['article'] + dataset['question']
-    print(dataset[['combined_context', 'answer']].values.tolist()[:2])
+    # print(dataset[['combined_context', 'answer']].values.tolist()[:2])
     out = tokenizer.batch_encode_plus(dataset[['combined_context', 'answer']].values.tolist(), 
                                       max_length=max_seq_length, 
                                       truncation=True, padding=True,
@@ -42,6 +42,9 @@ def encode_data(dataset, tokenizer, max_seq_length=128):
     return out
 
 def model_init():
-    model = GPTJForSequenceClassification.from_pretrained("EleutherAI/gpt-j-6B")
+    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # model = GPTJForSequenceClassification.from_pretrained("EleutherAI/gpt-j-6B")
+    model = RobertaForSequenceClassification.from_pretrained("roberta-base")
+    # model = model.to(device)
     # model = AutoModelForCausalLM.from_pretrained("bert-base-uncased")
     return model

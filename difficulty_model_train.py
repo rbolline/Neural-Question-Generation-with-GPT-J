@@ -2,16 +2,22 @@ import numpy as np
 import pandas as pd
 import torch
 
+import transformers
 from transformers import Trainer, TrainingArguments, EvalPrediction
 from transformers import GPT2Tokenizer, GPTJForSequenceClassification, AutoModelForCausalLM
+from transformers import RobertaTokenizerFast, RobertaForSequenceClassification
 # from datasets import load_metric
 
 from data_preprocessing import RaceDataset
 import util_methods
 
+transformers.logging.set_verbosity_error()
+# Set up GPU
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 # Set up tokenizer
-tokenizer = GPT2Tokenizer.from_pretrained("EleutherAI/gpt-j-6B")
-tokenizer.add_special_tokens({'pad_token': '[PAD]'})
+# tokenizer = GPT2Tokenizer.from_pretrained("EleutherAI/gpt-j-6B")
+tokenizer = RobertaTokenizerFast.from_pretrained("roberta-base")
 # model = GPTJForSequenceClassification.from_pretrained("EleutherAI/gpt-j-6B")
 # model = AutoModelForCausalLM.from_pretrained("bert-base-uncased")
 
@@ -59,3 +65,4 @@ trainer = Trainer(
     tokenizer=tokenizer)
 
 trainer.train()
+trainer.save_model('/scratch/rb4987/GPTJ_difficulty')
