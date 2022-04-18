@@ -85,11 +85,11 @@ def get_model_gen_text(model, tokenizer, prompts):
         gen_tokens = model.generate(input_ids,
                                     do_sample=True,
                                     temperature=0.3,
-                                    max_length=800,)
+                                    max_length=1000,)
 
         gen_text = tokenizer.batch_decode(gen_tokens)[0]
 
-        results.extend(gen_text)
+        results.append("".join(gen_text))
 
     return results
 
@@ -159,4 +159,4 @@ if __name__ == '__main__':
     gen_text = main(args)
 
     # TODO: change this later. save results
-    pd.DataFrame(gen_text).to_csv("./sample_gen_text_output.csv", index=True, header=True)
+    pd.DataFrame(gen_text).to_csv("./sample_gen_text_output.csv", index=False, header=True)
