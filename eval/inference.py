@@ -16,6 +16,7 @@ sys.path.append(os.path.abspath("../"))
 
 import argparse
 import pandas as pd
+from tqdm import tqdm
 
 import torch
 from transformers import AutoTokenizer, GPTJForCausalLM, AutoModelForCausalLM
@@ -54,8 +55,11 @@ def load_dataset(num_examples, is_train, batch_size):
     # create set of prompts for question generation
     prompt_collection = race_dataset.prepare_data_qg(sample_test_df, num_examples, is_train)
 
-    # batch the inputs for inference
-    batch_prompts = [prompt_collection[idx : idx + batch_size] for idx in range(0, len(prompt_collection), batch_size)]
+    # batch the inputs for infernce
+    if batch_size == 1:
+        batch_prompts = [[prompt] for prompt in prompt_collection]
+    else:
+        batch_prompts = [prompt_collection[idx : idx + batch_size] for idx in range(0, len(prompt_collection), batch_size)]
 
     return batch_prompts
 
@@ -71,14 +75,17 @@ def get_model_gen_text(model, tokenizer, prompts):
     model.to(device)
 
     results = []
-    for batch_prompts in prompts:
-        tokenized_inputs = tokenizer(batch_prompts, return_tensors="pt").to(device)
+    for batch_prompts in tqdm(prompts):
+        tokenized_inputs = tokenizer(batch_prompts,
+                                     return_tensors="pt",
+                                     padding=True,
+                                     truncation=True).to(device)
         input_ids = tokenized_inputs.input_ids
 
         gen_tokens = model.generate(input_ids,
                                     do_sample=True,
-                                    temperature=0.9,
-                                    max_length=100,)
+                                    temperature=0.3,
+                                    max_length=800,)
 
         gen_text = tokenizer.batch_decode(gen_tokens)[0]
 
@@ -99,17 +106,29 @@ def main(args):
     else:
         is_train = False
 
-    # load tokenizer
-    tokenizer = AutoTokenizer.from_pretrained("EleutherAI/gpt-j-6B")
-
     # load the GPT-J model
     model = load_model(use_opt_model)
 
+    print("**** FINISHED LOADING MODEL!! *******")
+
+    # load tokenizer
+    tokenizer = AutoTokenizer.from_pretrained("EleutherAI/gpt-j-6B")
+    tokenizer.padding_side = "left"
+
+    # Define PAD Token = EOS Token = 50256
+    tokenizer.pad_token = tokenizer.eos_token
+    model.config.pad_token_id = model.config.eos_token_id
+
+    print("**** FINISHED LOADING TOKENIZER!! *******")
+
     # prepare the dataset of prompts
-    prompt_collection = load_dataset(args.num_examples, is_train)
+    batched_prompts = load_dataset(args.num_examples, is_train, int(args.batch_size))
+
+    print("**** FINISHED LOADING DATSET!! *******")
+    print(batched_prompts[0])
 
     # gen text from the model
-    gen_text = get_model_gen_text(model, tokenizer, prompt_collection)
+    gen_text = get_model_gen_text(model, tokenizer, batched_prompts)
 
     return gen_text
 
@@ -133,7 +152,7 @@ if __name__ == '__main__':
                         required=False)
     parser.add_argument('--batch_size',
                         help='''number of examples per batch during inference''',
-                        default=8,
+                        default=2,
                         required=False)
     args = parser.parse_args()
 
