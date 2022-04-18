@@ -41,7 +41,7 @@ def load_model(use_opt_model=True):
     return model
 
 
-def load_dataset(num_examples, is_train):
+def load_dataset(num_examples, is_train, batch_size):
     race_dataset = RaceDataset()
 
     test_df = race_dataset.get_split('test', do_preprocess=True)
@@ -54,10 +54,13 @@ def load_dataset(num_examples, is_train):
     # create set of prompts for question generation
     prompt_collection = race_dataset.prepare_data_qg(sample_test_df, num_examples, is_train)
 
-    return prompt_collection
+    # batch the inputs for inference
+    batch_prompts = [prompt_collection[idx : idx + batch_size] for idx in range(0, len(prompt_collection), batch_size)]
+
+    return batch_prompts
 
 
-def get_model_gen_text(model, tokenizer, prompt):
+def get_model_gen_text(model, tokenizer, prompts):
     """Generates text using model and prompt"""
     # if cuda exists, use cuda, else run on cpu
     if torch.cuda.is_available():
@@ -67,17 +70,21 @@ def get_model_gen_text(model, tokenizer, prompt):
 
     model.to(device)
 
-    tokenized_inputs = tokenizer(prompt, return_tensors="pt").to(device)
-    input_ids = tokenized_inputs.input_ids
+    results = []
+    for batch_prompts in prompts:
+        tokenized_inputs = tokenizer(batch_prompts, return_tensors="pt").to(device)
+        input_ids = tokenized_inputs.input_ids
 
-    gen_tokens = model.generate(input_ids,
-                                do_sample=True,
-                                temperature=0.9,
-                                max_length=100,)
+        gen_tokens = model.generate(input_ids,
+                                    do_sample=True,
+                                    temperature=0.9,
+                                    max_length=100,)
 
-    gen_text = tokenizer.batch_decode(gen_tokens)[0]
+        gen_text = tokenizer.batch_decode(gen_tokens)[0]
 
-    return gen_text
+        results.extend(gen_text)
+
+    return results
 
 
 def main(args):
@@ -124,10 +131,13 @@ if __name__ == '__main__':
                             each prompt''',
                         default=1,
                         required=False)
-
+    parser.add_argument('--batch_size',
+                        help='''number of examples per batch during inference''',
+                        default=8,
+                        required=False)
     args = parser.parse_args()
 
     gen_text = main(args)
 
     # TODO: change this later. save results
-    pd.DataFrame([gen_text]).to_csv("./sample_gen_text_output.csv", index=True, header=True)
+    pd.DataFrame(gen_text).to_csv("./sample_gen_text_output.csv", index=True, header=True)
