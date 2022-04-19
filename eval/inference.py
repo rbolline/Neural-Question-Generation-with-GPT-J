@@ -84,33 +84,35 @@ def get_model_gen_text(model,
 
     model_params = config['model_params']
     results = []
-    for batch_df in tqdm(batched_prompt_df):
-        try:
-            batch_prompts = batch_df['prompt'].tolist()
-            #print(batch_prompts)
+    try:
+        for batch_df in tqdm(batched_prompt_df):
+            try:
+                batch_prompts = batch_df['prompt'].tolist()
+                #print(batch_prompts)
 
-            tokenized_inputs = tokenizer(batch_prompts,
-                                        return_tensors="pt",
-                                        padding=True,
-                                        truncation=True).to(device)
-            input_ids = tokenized_inputs.input_ids
+                tokenized_inputs = tokenizer(batch_prompts,
+                                            return_tensors="pt",
+                                            padding=True,
+                                            truncation=True)
+                input_ids = tokenized_inputs.input_ids
+                input_ids.to(device)
+                #print(input_ids)
 
-            #print(input_ids)
+                gen_tokens = model.generate(input_ids, **model_params)
+                gen_text = tokenizer.batch_decode(gen_tokens)
 
-            gen_tokens = model.generate(input_ids, **model_params)
-            gen_text = tokenizer.batch_decode(gen_tokens)
+                # send the tokenized inputs back to the cpu
+                tokenized_inputs.to(torch.device('cpu'))
+                torch.cuda.empty_cache()
 
-            # send the tokenized inputs back to the cpu
-            tokenized_inputs.to(torch.device('cpu'))
-            torch.cuda.empty_cache()
+                batch_df['gen_text'] = gen_text
+                results.append(batch_df)
 
-            batch_df['gen_text'] = gen_text
-            results.append(batch_df)
-        except KeyboardInterrupt as err:
-            print("Exiting due to Keyboard Interrupt")
+            except Exception as err:
+                traceback.print_exc()
 
-        except Exception as err:
-            traceback.print_exc()
+    except KeyboardInterrupt as err:
+        print("Exiting due to Keyboard Interrupt")
 
     return results
 
