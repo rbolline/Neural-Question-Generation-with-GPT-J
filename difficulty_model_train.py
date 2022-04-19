@@ -5,7 +5,7 @@ import torch
 import transformers
 from transformers import Trainer, TrainingArguments, EvalPrediction
 from transformers import GPT2Tokenizer, GPTJForSequenceClassification, AutoModelForCausalLM
-from transformers import RobertaTokenizerFast, RobertaForSequenceClassification
+from transformers import RobertaTokenizer, RobertaForSequenceClassification
 # from datasets import load_metric
 
 from data_preprocessing import RaceDataset
@@ -17,27 +17,17 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Set up tokenizer
 # tokenizer = GPT2Tokenizer.from_pretrained("EleutherAI/gpt-j-6B")
-tokenizer = RobertaTokenizerFast.from_pretrained("roberta-base")
+tokenizer = RobertaTokenizer.from_pretrained("roberta-base")
 # model = GPTJForSequenceClassification.from_pretrained("EleutherAI/gpt-j-6B")
 # model = AutoModelForCausalLM.from_pretrained("bert-base-uncased")
 
 # Generate encoded train data
-train = RaceDataset('train')
+train = RaceDataset('train', tokenizer)
 train.preprocess_dataset()
-train_df = train.dataset
-train_labels = train_df['example_id'].map(lambda x: 'high' if 'high' in x else 'middle')
-train_df['label'] = train_labels
-train_df = train_df.drop(columns=['example_id'])
-train_data = util_methods.encode_data(train_df, tokenizer)
-
 # Generate encoded eval data
-val = RaceDataset('validation')
+val = RaceDataset('validation', tokenizer)
 val.preprocess_dataset()
-val_df = val.dataset
-val_labels = val_df['example_id'].map(lambda x: 'high' if 'high' in x else 'middle')
-val_df['label'] = val_labels
-val_df = val_df.drop(columns=['example_id'])
-val_data = util_methods.encode_data(val_df, tokenizer)
+
 
 
 
@@ -53,13 +43,13 @@ t_args = TrainingArguments('./output',
                         )
 
 preds = []
-eval_pred = EvalPrediction(train_data, train_df['label'])
+eval_pred = EvalPrediction(train, train.labels)
 
 trainer = Trainer(
     model=util_methods.model_init(),
     args=t_args,
-    train_dataset=train_data,
-    eval_dataset=val_data,
+    train_dataset=train,
+    eval_dataset=val,
     compute_metrics=util_methods.compute_metrics,
     model_init=util_methods.model_init,
     tokenizer=tokenizer)

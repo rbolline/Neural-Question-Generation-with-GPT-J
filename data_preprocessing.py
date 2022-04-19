@@ -6,23 +6,27 @@ import torch
 from torch.utils.data import Dataset
 from util_methods import encode_data
 
+from transformers import RobertaTokenizerFast
 from datasets import load_dataset
 
 class RaceDataset(Dataset):
 
-    def __init__(self, split: string):
+    def __init__(self, split: string, tokenizer):
         # Load and convert dataset from pyarrow to pandas df
         self.dataset = load_dataset('race', 'all')[split].to_pandas().iloc[:1000]
+        self.encoded_data = []
+        self.tokenizer = tokenizer
+        self.labels = []
         self.processed = False
 
     def __len__(self):
-        return len(self.dataset)
+        return len(self.labels)
 
     def __getitem__(self, i):
         return {
-                  'input_ids':(self.dataset['input_ids'][i]), 
-                  'attention_mask':(self.dataset['attention_mask'][i]),
-                  'labels':self.dataset['label'][i]
+                  'input_ids':self.encoded_data['input_ids'][i], 
+                  'attention_mask':self.encoded_data['attention_mask'][i],
+                  'labels':self.labels[i]
                 }
 
     def drop_numeric(self, df):
@@ -39,7 +43,7 @@ class RaceDataset(Dataset):
             ans_list.append((df['options'].iat[i])[df_ans_i])
 
         df['answer'] = pd.Series(ans_list)
-        print(df['answer'].iat[1])
+        # print(df['answer'].iat[1])
         options_series = df['options']
 
         def is_valid_options(options_list):
@@ -68,6 +72,8 @@ class RaceDataset(Dataset):
         ## Rule 4: Exclude questions shorter than 5 words
         val_df = val_df[ val_df.question.str.replace(',','').str.split().str.len() > 5 ]
         
-        self.processed = True
         self.dataset = val_df
+        self.encoded_data, self.labels = encode_data(self.dataset, self.tokenizer)
+        self.labels = self.labels.reset_index(drop=True)
+        self.processed = True
 

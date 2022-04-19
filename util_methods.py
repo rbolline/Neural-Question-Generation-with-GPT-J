@@ -33,13 +33,14 @@ def encode_data(dataset, tokenizer, max_seq_length=128):
     ## Use the tokenizer provided in the argument and see the code comments above for
     ## more details.
     # print(dataset[['question', 'article', 'answer']].values.tolist()[:5])
-    dataset['combined_context'] = dataset['article'] + dataset['question']
+    dataset['combined_context'] = dataset['article'] + ', Question: ' + dataset['question']
     # print(dataset[['combined_context', 'answer']].values.tolist()[:2])
     out = tokenizer.batch_encode_plus(dataset[['combined_context', 'answer']].values.tolist(), 
                                       max_length=max_seq_length, 
                                       truncation=True, padding=True,
                                       return_tensors='pt')
-    return out
+    labels = dataset['example_id'].map(lambda x: 1 if 'high' in x else 0)
+    return out, labels
 
 def model_init():
     # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
