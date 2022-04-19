@@ -52,10 +52,10 @@ def load_dataset(config):
     print(test_df.head(1))
 
     ##TODO: Included only for testing. remove later
-    sample_test_df = test_df[test_df.groupby('example_id').ngroup() < 2]
+    #sample_test_df = test_df[test_df.groupby('context_id').ngroup() < 2]
 
     # create set of prompts for question generation
-    prompt_df = race_dataset.prepare_data_qg(sample_test_df,
+    prompt_df = race_dataset.prepare_data_qg(test_df,
                                              config['num_examples'],
                                              config['is_train'])
 
@@ -83,7 +83,7 @@ def get_model_gen_text(model,
     results = []
     for batch_df in tqdm(batched_prompt_df):
         batch_prompts = batch_df['prompt'].tolist()
-        print(batch_prompts)
+        #print(batch_prompts)
 
         tokenized_inputs = tokenizer(batch_prompts,
                                      return_tensors="pt",
@@ -91,7 +91,7 @@ def get_model_gen_text(model,
                                      truncation=True).to(device)
         input_ids = tokenized_inputs.input_ids
 
-        print(input_ids)
+        #print(input_ids)
 
         gen_tokens = model.generate(input_ids, **model_params)
         gen_text = tokenizer.batch_decode(gen_tokens)
@@ -105,7 +105,7 @@ def get_model_gen_text(model,
 def main(config):
     """Defines main execution"""
     # load the GPT-J model
-    # model = load_model(config['use_opt_model'])
+    model = load_model(config['use_opt_model'])
 
     print("**** FINISHED LOADING MODEL!! *******")
 
@@ -115,7 +115,7 @@ def main(config):
 
     # Define PAD Token = EOS Token = 50256
     tokenizer.pad_token = tokenizer.eos_token
-    # model.config.pad_token_id = model.config.eos_token_id
+    model.config.pad_token_id = model.config.eos_token_id
 
     print("**** FINISHED LOADING TOKENIZER!! *******")
 
@@ -148,8 +148,8 @@ if __name__ == '__main__':
     results = main(config)
 
     # TODO: change this later. save results
-    with open(r'./sample_output.pickle', 'wb') as fh:
-        pickle.dump(results, fh)
+    #with open(r'./sample_output.pickle', 'wb') as fh:
+    #    pickle.dump(results, fh)
 
     results_df = pd.concat(results, axis=0)
     results_df.to_csv(config['savepath'], index=False, header=True)
