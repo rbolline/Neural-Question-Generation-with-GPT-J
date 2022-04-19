@@ -1,0 +1,15 @@
+is_train: false
+batch_size: 2
+num_examples: 4
+use_opt_model: true
+savepath: ./sample_output.csv
+
+model_params:
+  do_sample: true # if set to false then uses greedy decoding
+  temperature: 0.3 # controls randomness in decoding
+  max_new_tokens: 250 # max num of tokens in generated text
+  top_k: 50
+  top_p: 1.0
+  length_penalty: 0.8 # if less than 1 then favors shorter sequences
+  return_dict_in_generate: true
+
