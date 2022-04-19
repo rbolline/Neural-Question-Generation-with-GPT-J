@@ -105,7 +105,7 @@ def get_model_gen_text(model,
 def main(config):
     """Defines main execution"""
     # load the GPT-J model
-    model = load_model(config['use_opt_model'])
+    # model = load_model(config['use_opt_model'])
 
     print("**** FINISHED LOADING MODEL!! *******")
 
@@ -115,7 +115,7 @@ def main(config):
 
     # Define PAD Token = EOS Token = 50256
     tokenizer.pad_token = tokenizer.eos_token
-    model.config.pad_token_id = model.config.eos_token_id
+    # model.config.pad_token_id = model.config.eos_token_id
 
     print("**** FINISHED LOADING TOKENIZER!! *******")
 

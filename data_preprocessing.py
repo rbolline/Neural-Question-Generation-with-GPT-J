@@ -32,9 +32,9 @@ class RaceDataset(Dataset):
 
         if do_preprocess:
             preprocessed_df_split = self.preprocess_dataset(df_split)
-            # filtered_df_split = self.filter_dataset(preprocessed_df_split)
-            # return filtered_df_split
-            return preprocessed_df_split
+            filtered_df_split = self.filter_dataset(preprocessed_df_split)
+            return filtered_df_split
+            # return preprocessed_df_split
 
         else:
             return df_split
@@ -64,21 +64,28 @@ class RaceDataset(Dataset):
 
     def filter_dataset(self, df_split):
         # Continue to add preprocessing steps
-        
+
         ## Rule 1: Drop numeric
-        df = self.drop_numeric(df_split)
-        
+        # df_split = self.drop_numeric(df_split)
+
         ## Rule 2: Exclude phrase completion questions
-        df = df[ ~df['question'].str.contains('_')]
+        df_split = df_split[ ~df_split['question'].str.contains('_')]
 
         ## Rule 3: Exclude "According to the passage" questions
-        df = df[ ~df['question'].str.contains('According to the passage')]
+        df_split = df_split[ ~df_split['question'].str.contains('According to the passage')]
 
         ## Rule 4: Exclude questions shorter than 5 words
-        df = df[ df.question.str.replace(',','').str.split().str.len() > 5 ]
-        
+        df_split = df_split[ df_split.question.str.replace(',','').str.split().str.len() > 5 ]
+
+        ## TODO: add flag for zero-shot
+        ## Drop passages that have just a single question left after filtering
+        context_count_df = df_split.groupby("context_id").size().to_frame('count').reset_index()
+        context_ids_to_drop = context_count_df.loc[context_count_df['count'] < 2, 'context_id'].tolist()
+
+        df_split = df_split.loc[ ~df_split['context_id'].isin(context_ids_to_drop)]
+
         self.processed = True
-        self.dataset = df
+        return df_split
 
     def drop_numeric(self, df):
         options_series = df['options']
