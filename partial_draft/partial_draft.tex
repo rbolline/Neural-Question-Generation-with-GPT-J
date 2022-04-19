@@ -52,12 +52,15 @@
 %         Author 3 \\ Address line \\ ... \\ Address line}
 
 \author{Sukhrit Rao \\
+  Center for Data Science \\
   New York University \\
   \texttt{str8775@nyu.edu} \\\And
   Rohit Bollineni \\
+  Center for Data Science \\
   New York University \\
   \texttt{rb4987@nyu.edu} \\\And
   Hasan Khan \\
+  Courant Institute \\ 
   New York University \\
   \texttt{hk3550@nyu.edu} \\}
 
@@ -69,7 +72,7 @@ The last thing you figure out in writing a [paper] is what to put first - Pascal
 
 \section{Introduction}
 
-Asking good questions forms an essential part of assessing a student’s grasp of certain concepts. Instructors spend considerable time constructing exam and assignment questions that assess students on material taught in the classroom. Neural Question Generation (QG) systems aim to automate the process of question construction by generating novel questions given a particular context. QG systems with configurable difficulty settings could help offer students custom material based on their individual ability, and act as a foundation for adaptive learning \citep{adaptive-education:8}. 
+Asking good questions forms an essential part of assessing a student’s grasp of certain concepts. Instructors spend considerable time constructing exam and assignment questions that assess students on material taught in the classroom. Questions often need to be continuously replaced over time as questions become shared or publicly available. Often, human instructors may not come up with the clearest questions \citep{human-eval:7}. Neural Question Generation (QG) systems aim to automate the process of question construction by generating novel questions given a particular context, thus reducing time and costs of question generation for educators and test developers. Advanced QG systems with configurable parameters could help offer students custom material based on their individual ability, and act as a foundation for adaptive testing and learning \citep{adaptive-education:8}. 
 
 Recent work in QG has focused on generating quiz-style questions \citep{Quiz:1}, with particular focus on generating questions of selected difficulty levels \citep{Difficulty:3}. However, these techniques have relied on fine-tuning a language model on a task-specific dataset such as SQuAD or RACE \citep{RACE:2}. These models are limited in their domain of use and do not generalize out-of-distribution (citation???). Moreover, constructing such datasets is time-consuming and costly, and thus not a viable means for widespread adoption. In this paper, we propose using GPT-J in a zero-shot setting to produce questions that are \textit{fluent} in linguistic construction, \textit{relevant} to the input context, and appropriately \textit{difficult} as requested in the input. We compare our work against a baseline GPT-J model fine-tuned on the task.
 
@@ -98,9 +101,9 @@ A similar input is used for the general setting, except no answer is included.  
 
 In this instance, the true question is "Which of the following best shows American individualism?"
 
-\subsection{Model}
+\subsection{Model \& Tools}
 
-For generating questions, we choose GPT-J-6B \citep{gpt-j:4} for its manageable parameter size (6 billion) and open-source code, allowing us to fine-tune the model. We use the following model parameter values: 
+For generating questions, we select GPT-J-6B \citep{gpt-j:4} pulled from HuggingFace for its manageable parameter size (6 billion) and open-source code, allowing us to fine-tune the model. We use the following model parameter values: 
 
 \begin{table}[h]
 \centering
@@ -119,6 +122,9 @@ return-dict-in-generate & False \\
 \end{tabular}
 \end{table}
 
+We perform model training on NYU GCP. For the zero-shot setting, we utilize ---- . All code can be found in our \href{https://github.com/rbolline/Neural-Question-Generation-with-GPT-J}{Github repository}. 
+
+
 
 \subsection{Evaluation}
 
@@ -129,77 +135,16 @@ text). \textbf{Difficulty} is determined by checking if the generated question�
 
 \section{Results}
 
-The first line of the file must be
-\begin{quote}
-\begin{verbatim}
-\documentclass[11pt]{article}
-\end{verbatim}
-\end{quote}
+\section{Discussion}
 
-To load the style file in the review version:
-\begin{quote}
-\begin{verbatim}
-\usepackage[review]{acl}
-\end{verbatim}
-\end{quote}
-For the final version, omit the \verb|review| option:
-\begin{quote}
-\begin{verbatim}
-\usepackage{acl}
-\end{verbatim}
-\end{quote}
+\section{Collaboration}
 
-To use Times Roman, put the following in the preamble:
-\begin{quote}
-\begin{verbatim}
-\usepackage{times}
-\end{verbatim}
-\end{quote}
-(Alternatives like txfonts or newtx are also acceptable.)
+Credit to Sukhrit Rao for formulating the question. He build out most of the training and inference scripts for the GPT-J model, prompt design  
+Credit to Rohit Bollineni for writing the training script 
+Credit to Hasan Khan for paper writing, pulling references together, and figure design.
 
-Please see the \LaTeX{} source of this document for comments on other packages that may be useful.
+All team members worked on manual evaluations of the questions generated 
 
-Set the title and author using \verb|\title| and \verb|\author|. Within the author list, format multiple authors using \verb|\and| and \verb|\And| and \verb|\AND|; please see the \LaTeX{} source for examples.
-
-By default, the box containing the title and author names is set to the minimum of 5 cm. If you need more space, include the following in the preamble:
-\begin{quote}
-\begin{verbatim}
-\setlength\titlebox{<dim>}
-\end{verbatim}
-\end{quote}
-where \verb|<dim>| is replaced with a length. Do not set this length smaller than 5 cm.
-
-\section{Document Body}
-
-\subsection{Footnotes}
-
-Footnotes are inserted with the \verb|\footnote| command.\footnote{This is a footnote.}
-
-\subsection{Tables and figures}
-
-See Table~\ref{tab:accents} for an example of a table and its caption.
-\textbf{Do not override the default caption sizes.}
-
-\begin{table}
-\centering
-\begin{tabular}{lc}
-\hline
-\textbf{Command} & \textbf{Output}\\
-\hline
-\verb|{\"a}| & {\"a} \\
-\verb|{\^e}| & {\^e} \\
-\verb|{\`i}| & {\`i} \\ 
-\verb|{\.I}| & {\.I} \\ 
-\verb|{\o}| & {\o} \\
-\verb|{\'u}| & {\'u}  \\ 
-\verb|{\aa}| & {\aa}  \\\hline
-\end{tabular}
-\begin{tabular}{lc}
-\hline
-\end{tabular}
-\caption{Example commands for accented characters, to be used in, \emph{e.g.}, Bib\TeX{} entries.}
-\label{tab:accents}
-\end{table}
 
 \subsection{Hyperlinks}
 
