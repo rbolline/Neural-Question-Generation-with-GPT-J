@@ -84,8 +84,8 @@ def get_model_gen_text(model,
 
     model_params = config['model_params']
     results = []
-    try:
-        for batch_df in tqdm(batched_prompt_df):
+    for batch_df in tqdm(batched_prompt_df):
+        try:
             batch_prompts = batch_df['prompt'].tolist()
             #print(batch_prompts)
 
@@ -106,11 +106,11 @@ def get_model_gen_text(model,
 
             batch_df['gen_text'] = gen_text
             results.append(batch_df)
-    except KeyboardInterrupt as err:
-        print("Exiting due to Keyboard Interrupt")
+        except KeyboardInterrupt as err:
+            print("Exiting due to Keyboard Interrupt")
 
-    except Exception as err:
-        traceback.print_exc()
+        except Exception as err:
+            traceback.print_exc()
 
     return results
 
