@@ -22,6 +22,7 @@ import yaml
 import pickle
 
 import torch
+from torch.utils.data import DataLoader
 torch.cuda.empty_cache()
 
 from transformers import AutoTokenizer, GPTJForCausalLM, AutoModelForCausalLM
@@ -50,28 +51,22 @@ def load_model(use_opt_model=True):
 def load_dataset(config):
     race_dataset = RaceDataset()
 
-    test_df = race_dataset.get_split('test', do_preprocess=True)
-    print(test_df.columns)
-    print(test_df.head(1))
+    test_df = race_dataset.get_split(config['data_split'], do_preprocess=True)
 
     ##TODO: Included only for testing. remove later
     #sample_test_df = test_df[test_df.groupby('context_id').ngroup() < 2]
 
     # create set of prompts for question generation
-    prompt_df = race_dataset.prepare_data_qg(test_df,
-                                             config['num_examples'],
-                                             config['is_train'])
+    race_dataset.prepare_data_qg(test_df,
+                                 config['num_examples'],
+                                 config['is_train'])
 
-    # batch the inputs for infernce
-    batch_size = config['batch_size']
-    batch_prompts = [prompt_df.iloc[idx : idx + batch_size] for idx in range(0, len(prompt_df), batch_size)]
-
-    return batch_prompts
+    return race_dataset
 
 
 def get_model_gen_text(model,
                        tokenizer,
-                       batched_prompt_df,
+                       data_loader,
                        config):
     """Generates text using model and prompt"""
     # if cuda exists, use cuda, else run on cpu
@@ -85,10 +80,9 @@ def get_model_gen_text(model,
     model_params = config['model_params']
     results = []
     try:
-        for batch_df in tqdm(batched_prompt_df):
+        for batch_dict in tqdm(data_loader):
             try:
-                batch_prompts = batch_df['prompt'].tolist()
-                #print(batch_prompts)
+                batch_prompts = batch_dict['prompt']
 
                 tokenized_inputs = tokenizer(batch_prompts,
                                             return_tensors="pt",
@@ -105,10 +99,13 @@ def get_model_gen_text(model,
                 tokenized_inputs.to(torch.device('cpu'))
                 torch.cuda.empty_cache()
 
-                batch_df['gen_text'] = gen_text
+                batch_dict['gen_text'] = gen_text
+
+                batch_df = pd.DataFrame(batch_dict)
                 results.append(batch_df)
 
             except Exception as err:
+                raise(err)
                 traceback.print_exc()
 
     except KeyboardInterrupt as err:
@@ -120,7 +117,7 @@ def get_model_gen_text(model,
 def main(config):
     """Defines main execution"""
     # load the GPT-J model
-    model = load_model(config['use_opt_model'])
+    # model = load_model(config['use_opt_model'])
 
     print("**** FINISHED LOADING MODEL!! *******")
 
@@ -130,18 +127,24 @@ def main(config):
 
     # Define PAD Token = EOS Token = 50256
     tokenizer.pad_token = tokenizer.eos_token
-    model.config.pad_token_id = model.config.eos_token_id
+    # model.config.pad_token_id = model.config.eos_token_id
 
     print("**** FINISHED LOADING TOKENIZER!! *******")
 
     # prepare the dataset of prompts
-    batched_prompt_df = load_dataset(config)
+    test_dataset = load_dataset(config)
 
     print("**** FINISHED LOADING DATSET!! *******")
-    print(batched_prompt_df[0].head(2))
+    print(test_dataset[0])
+
+    data_loader = torch.utils.data.DataLoader(dataset=test_dataset,
+                                              batch_size=config['batch_size'],
+                                              collate_fn=test_dataset.collate_fn,
+                                              shuffle=False)
 
     # gen text from the model
-    gen_text = get_model_gen_text(model, tokenizer, batched_prompt_df, config)
+    # model=None
+    gen_text = get_model_gen_text(model, tokenizer, data_loader, config)
 
     return gen_text
 

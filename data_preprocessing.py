@@ -5,6 +5,7 @@ import string
 import torch
 from torch.utils.data import Dataset
 from util_methods import encode_data
+import pandas as pd
 
 from datasets import load_dataset
 
@@ -19,7 +20,7 @@ class RaceDataset(Dataset):
         return len(self.dataset)
 
     def __getitem__(self, i):
-        return self.dataset.iloc[i]
+        return self.dataset.iloc[[i]]
 
     def get_split(self, split, do_preprocess=True):
         """Fetches train/validation/test split
@@ -33,8 +34,8 @@ class RaceDataset(Dataset):
         if do_preprocess:
             preprocessed_df_split = self.preprocess_dataset(df_split)
             filtered_df_split = self.filter_dataset(preprocessed_df_split)
+
             return filtered_df_split
-            # return preprocessed_df_split
 
         else:
             return df_split
@@ -146,7 +147,10 @@ class RaceDataset(Dataset):
             prompt_collection += create_prompt(group, num_examples, is_train)
 
         prompt_df = pd.concat(prompt_collection, axis=0)
-        return prompt_df
+        self.dataset = prompt_df
+        # batch_prompts = [prompt_df.iloc[idx : idx + batch_size] for idx in range(0, len(prompt_df), batch_size)]
+        # self.dataset = batch_prompts
 
-
-
+    def collate_fn(self, batch):
+        batch_df = pd.concat(batch, axis=0)
+        return batch_df.to_dict('list')
