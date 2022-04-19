@@ -1,6 +1,6 @@
 is_train: false
 data_split: test
-batch_size: 4
+batch_size: 1
 num_examples: 1
 use_opt_model: true
 savepath: ./test_output.csv
