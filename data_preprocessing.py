@@ -147,6 +147,7 @@ class RaceDataset(Dataset):
             prompt_collection += create_prompt(group, num_examples, is_train)
 
         prompt_df = pd.concat(prompt_collection, axis=0)
+        prompt_df = prompt_df.sort_values('prompt')
         self.dataset = prompt_df
         # batch_prompts = [prompt_df.iloc[idx : idx + batch_size] for idx in range(0, len(prompt_df), batch_size)]
         # self.dataset = batch_prompts

@@ -80,6 +80,7 @@ def get_model_gen_text(model,
     model_params = config['model_params']
     results = []
     try:
+        counter = 0
         for batch_dict in tqdm(data_loader):
             try:
                 batch_prompts = batch_dict['prompt']
@@ -89,8 +90,8 @@ def get_model_gen_text(model,
                                             padding=True,
                                             truncation=True).to(device)
                 input_ids = tokenized_inputs.input_ids
-                print("AFTER INPUT IDS")
-                print(torch.cuda.memory_allocated())
+                # print("AFTER INPUT IDS")
+                # print(torch.cuda.memory_allocated())
 
                 #print(input_ids)
 
@@ -101,14 +102,23 @@ def get_model_gen_text(model,
                 del tokenized_inputs
                 del input_ids
                 torch.cuda.empty_cache()
-                print("AFTER DELETING CACHE")
-                print(torch.cuda.memory_allocated())
+                # print("AFTER DELETING CACHE")
+                # print(torch.cuda.memory_allocated())
 
 
                 batch_dict['gen_text'] = gen_text
 
                 batch_df = pd.DataFrame(batch_dict)
                 results.append(batch_df)
+
+                counter += 1
+
+                if counter % 50 == 0:
+                    print("AFTER 50 examples")
+                    print(torch.cuda.memory_allocated())
+
+                    results_df = pd.concat(results, axis=0)
+                    results_df.to_csv(config['savepath'], index=False, header=True)
 
             except Exception as err:
                 raise(err)
