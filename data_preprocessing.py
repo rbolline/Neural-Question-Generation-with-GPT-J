@@ -53,6 +53,13 @@ class RaceDataset(Dataset):
 
         df_split['difficulty_label'] = np.where(df_split['example_id'].str.contains("high"), "Hard", "Easy")
 
+        # store the id of each context passage
+        df_split['context_id'] = df_split['example_id']
+
+        # create unique ids for each context question pair
+        df_split['rolling_count'] = df_split.groupby((df_split['example_id'] != df_split['example_id'].shift(1)).astype(int).cumsum()).cumcount()
+        df_split['example_id'] = df_split['example_id'].str.split(".").str[0] + "_" + df_split['rolling_count'].astype(str)
+
         return df_split
 
     def filter_dataset(self, df_split):
@@ -84,37 +91,47 @@ class RaceDataset(Dataset):
         '''Prepares the dataset for the Question Generation Task'''
         # prompt format <CONTEXT>\nDifficulty: <label>. Answer: <ANS>. Question: <QUES>
 
-        def create_prompt(group):
-            ##TODO: if num examples is less than len(group) then return multiple instances of prompts with context included.
-            # Current code implements just 1
-            if not is_train and num_examples > 1:
-                raise ValueError(f"num_examples cannot be > 1 in test mode. Input: {num_examples}")
-
-            if is_train:
-                group['prompt'] = group.apply(lambda row: f"Difficulty: {row['difficulty_label']}. Answer: {row['answer']}. Question: {row['question']}", axis=1)
-            else:
-                group['prompt'] = group.apply(lambda row: f"Difficulty: {row['difficulty_label']}. Answer: {row['answer']}.", axis=1)
-
-            context = group['article'].iloc[0]
-            if num_examples >= len(group):
-                with_replacement = True
-
-            else:
-                with_replacement = False
-
-            num_reps = max(1, len(group) - num_examples)
-
+        def create_prompt(group, num_examples, is_train):
+            """Cretes prompts for each article"""
+            example_ids = group['example_id'].tolist()
             prompt_collection = []
-            for ii in range(num_reps):
-                prompt = "\n".join(group.sample(num_examples, replace=with_replacement)['prompt'].tolist())
+            for example_id in example_ids:
+                example_cond = group['example_id'].isin([example_id])
+                include_df = group.loc[~example_cond]
+                example_df = group.loc[example_cond]
+
+                if is_train:
+                    # if in training mode then include the question for all examples
+                    include_df['prompt'] = include_df.apply(lambda row: f"Difficulty: {row['difficulty_label']}. Answer: {row['answer']}. Question: {row['question']}", axis=1)
+                    example_df['prompt'] = example_df.apply(lambda row: f"Difficulty: {row['difficulty_label']}. Answer: {row['answer']}. Question: {row['question']}", axis=1)
+                else:
+                    # if in test mode then include the questions for all examples except the test example.
+                    include_df['prompt'] = include_df.apply(lambda row: f"Difficulty: {row['difficulty_label']}. Answer: {row['answer']}. Question: {row['question']}", axis=1)
+                    example_df['prompt'] = example_df.apply(lambda row: f"Difficulty: {row['difficulty_label']}. Answer: {row['answer']}. Question:", axis=1)
+
+                num_examples = min(len(group) - 1, num_examples)
+                context = group['article'].iloc[0]
+
+                # include the questions from all other examples for the given context
+                prompt = "\n".join(include_df.sample(num_examples, replace=False)['prompt'].tolist())
+
+                # include the question for the given example
+                prompt = f"{prompt}\n{example_df['prompt'].iloc[0]}"
+
+                # add the context article to the prompt
                 prompt = f"{context}\n{prompt}"
 
-                prompt_collection.append(prompt)
+                example_df['prompt'] = prompt
+                prompt_collection.append(example_df)
 
             return prompt_collection
 
         prompt_collection = []
-        for _, group in df_split.groupby('example_id'):
-            prompt_collection += create_prompt(group)
+        for _, group in df_split.groupby('context_id'):
+            prompt_collection += create_prompt(group, num_examples, is_train)
 
-        return prompt_collection
+        prompt_df = pd.concat(prompt_collection, axis=0)
+        return prompt_df
+
+
+
