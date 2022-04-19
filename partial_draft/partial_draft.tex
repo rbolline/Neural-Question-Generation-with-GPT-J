@@ -31,7 +31,7 @@
 %
 % and set <dim> to something 5cm or larger.
 
-\title{Zero-shot Neural Question Generation}
+\title{Zero-shot Question Generation with GPT-J}
 
 % Author information can be set in various styles:
 
@@ -53,10 +53,10 @@
 
 \author{Sukhrit Rao \\
   New York University \\
-  \texttt{hk3550@nyu.edu} \\\And
+  \texttt{str8775@nyu.edu} \\\And
   Rohit Bollineni \\
   New York University \\
-  \texttt{hk3550@nyu.edu} \\\And
+  \texttt{rb4987@nyu.edu} \\\And
   Hasan Khan \\
   New York University \\
   \texttt{hk3550@nyu.edu} \\}
@@ -64,23 +64,67 @@
 \begin{document}
 \maketitle
 \begin{abstract}
-This document is a supplement to the general instructions for *ACL authors. It contains instructions for using the \LaTeX{} style files for ACL conferences. 
-The document itself conforms to its own specifications, and is therefore an example of what your manuscript should look like.
-These instructions should be used both for papers submitted for review and for final versions of accepted papers.
+The last thing you figure out in writing a [paper] is what to put first - Pascal
 \end{abstract}
 
 \section{Introduction}
 
-Neural Question Generation (QG) aims to generate a novel question given an input passage. A variant of this task is answer-focused QG, where the answer and reference passage are passed as input, resulting in questions relevant to the input answer. Asking good questions forms an essential part of assessing a student’s grasp of certain concepts, and instructors spend considerable time in framing questions that range from easy to difficult. Improved QG systems could help students receive focused material based on their individual ability, and act as a foundation for adaptive learning. 
+Asking good questions forms an essential part of assessing a student’s grasp of certain concepts. Instructors spend considerable time constructing exam and assignment questions that assess students on material taught in the classroom. Neural Question Generation (QG) systems aim to automate the process of question construction by generating novel questions given a particular context. QG systems with configurable difficulty settings could help offer students custom material based on their individual ability, and act as a foundation for adaptive learning (citation???). 
 
-Recent work in QG has focused on generating quiz-style questions that leverage large language models. There has also been work done on generating questions of varying difficulty given fragments of an answer. However, these techniques have relied on fine-tuning a model on a task-specific dataset such as SQuAD or RACE. These models are limited in their domain of use and do not generalize out-of-distribution. Moreover, constructing such datasets is time-consuming and costly, and thus not a viable means for widespread adoption. In this paper, we propose a QG system that uses GPT-J in a zero-shot setting to produce questions of varying difficulty. We compare this system with a GPT-J model with a GPT-J model fine-tuned on this task.
+Recent work in QG has focused on generating quiz-style questions \citep{Quiz:1}, with particular focus on generating questions of selected difficulty levels \citep{Difficulty:3}. However, these techniques have relied on fine-tuning a language model on a task-specific dataset such as SQuAD or RACE \citep{RACE:2}. These models are limited in their domain of use and do not generalize out-of-distribution (citation???). Moreover, constructing such datasets is time-consuming and costly, and thus not a viable means for widespread adoption. In this paper, we propose using GPT-J in a zero-shot setting to produce questions that are \textit{fluent} in linguistic construction, \textit{relevant} to the input context, and appropriately \textit{difficult} as requested in the input. We compare our work against a GPT-J model fine-tuned on the task.
 
+In the context of reading comprehension, we look at two types of QG variants. In answer-focused QG, a reference passage and an answer are passed as inputs into the system, resulting in the generation of questions relevant to the input answer. In general QG, only a reference passage is passed as input, resulting in the generation of unmapped questions relevant to the context.
 
 \section{Method}
 
-To produce a PDF file, pdf\LaTeX{} is strongly recommended (over original \LaTeX{} plus dvips+ps2pdf or dvipdf). Xe\LaTeX{} also produces PDF files, and is especially suitable for text in non-Latin scripts.
+\subsection{Data}
 
-\section{Preamble}
+We use RACE, a compilation of reading comprehension questions from middle and high school English exams administered to Chinese students, to fine tune and prompt our GPT-J model. Questions that are generic (i.e less than 5 words, non-specific to the context, etc.) are dropped, alongside with any questions with numeric answers, in order to prevent the model from generating vague questions (???). 
+
+For the answer-focused setting, training inputs to the QG model are composed of a question, an answer, a context and a difficulty. We determine difficulty by mapping middle school questions to \textit{easy} and high school questions to \textit{hard} difficulties.   ---- data points are used for fine-tuning, and 1695 for testing. The same 1695 datapoints are used for prompting in the zero shot setting. We only use contexts that have at least two associated questions, in order to allow for zero shot prompting for every test context.  
+
+A similar input is used for the general setting, except no answer is included.  ---- data points are used for general fine-tuning, and ---- for general prompting in the zero shot setting. We experiment with various prompts for the zero shot setting (insert future prompt variant info here). An example of the zero shot input prompt is shown below: 
+
+\begin{quote}
+\textbf{Context}: Although most weddings follow long-held traditions, there's still room for American individualism. For example, the usual place for a wedding is in a church. But some people get married outdoors in a scenic spot. A few even have the ceremony while skydiving or riding on horseback! The couple may invite hundreds of people or just a few close friends. They choose their own style of colors, decorations and music during the ceremony. But some things rarely change. The bride usually wears a beautiful long white wedding dress. She traditionally wears "something old, something new, something borrowed and something blue." The groom wears a formal suit.
+
+\textbf{Difficulty}: Hard. 
+
+\textbf{Answer}: Some people choose their own style of weddings. 
+
+\textbf{Question}:
+
+\end{quote}
+
+In this instance, the true question is "Which of the following best shows American individualism?"
+
+\subsection{Model}
+
+We choose GPT-J-6B \citep{gpt-j:4} for its manageable parameter size (6 billion) and open-source code, allowing us to fine-tune the model. We use the following model parameter values: 
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lc}
+\hline
+\textbf{Parameter} & \textbf{Value}\\
+\hline
+do-sample & True \\
+temperature & 1.0 \\
+max-new-tokens & 250 \\
+top-k & 50 \\ 
+top-p & 1.0  \\ 
+length_penalty & 0.8 \\
+return-dict-in-generate & False \\
+\hline
+\end{tabular}
+\end{table}
+
+
+\subsection{Evaluation}
+
+Generated questions are evaluated on three criteria: fluency, relevancy, and difficulty. Fluency is defined as ----, and measured using ----- . Relevancy is defined as ----, and measured using ----- . Difficulty is defined as ----, and measured using ----- . 
+
+\section{Results}
 
 The first line of the file must be
 \begin{quote}
@@ -148,16 +192,6 @@ See Table~\ref{tab:accents} for an example of a table and its caption.
 \verb|{\aa}| & {\aa}  \\\hline
 \end{tabular}
 \begin{tabular}{lc}
-\hline
-\textbf{Command} & \textbf{Output}\\
-\hline
-\verb|{\c c}| & {\c c} \\ 
-\verb|{\u g}| & {\u g} \\ 
-\verb|{\l}| & {\l} \\ 
-\verb|{\~n}| & {\~n} \\ 
-\verb|{\H o}| & {\H o} \\ 
-\verb|{\v r}| & {\v r} \\ 
-\verb|{\ss}| & {\ss} \\
 \hline
 \end{tabular}
 \caption{Example commands for accented characters, to be used in, \emph{e.g.}, Bib\TeX{} entries.}
@@ -258,7 +292,7 @@ John Chen, Henry S. Thompson and Donald Walker.
 Additional elements were taken from the formatting instructions of the \emph{International Joint Conference on Artificial Intelligence} and the \emph{Conference on Computer Vision and Pattern Recognition}.
 
 % Entries for the entire Anthology, followed by custom entries
-\bibliography{anthology,custom}
+\bibliography{citations}
 \bibliographystyle{acl_natbib}
 
 \appendix
