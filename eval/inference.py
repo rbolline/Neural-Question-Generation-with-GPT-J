@@ -87,16 +87,16 @@ def get_model_gen_text(model,
                 tokenized_inputs = tokenizer(batch_prompts,
                                             return_tensors="pt",
                                             padding=True,
-                                            truncation=True)
+                                            truncation=True).to(device)
                 input_ids = tokenized_inputs.input_ids
-                input_ids.to(device)
                 #print(input_ids)
 
                 gen_tokens = model.generate(input_ids, **model_params)
                 gen_text = tokenizer.batch_decode(gen_tokens)
 
                 # send the tokenized inputs back to the cpu
-                tokenized_inputs.to(torch.device('cpu'))
+                del tokenized_inputs
+                del input_ids
                 torch.cuda.empty_cache()
 
                 batch_dict['gen_text'] = gen_text
