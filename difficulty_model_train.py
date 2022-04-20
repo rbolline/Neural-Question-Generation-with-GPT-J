@@ -36,10 +36,11 @@ batch_size = 8
 lr = 1e-5
 lr_lower = 1e-5
 lr_upper = 5e-5
-t_args = TrainingArguments('./output', 
+t_args = TrainingArguments(f'./results/roberta_difficulty_ep={num_epochs}_batch={batch_size}', 
                             do_train=True, 
                             num_train_epochs=num_epochs, 
-                            per_device_train_batch_size=batch_size
+                            per_device_train_batch_size=batch_size,
+                            logging_dir=f'./results/roberta_difficulty_ep={num_epochs}_batch={batch_size}/logs'
                         )
 
 preds = []
@@ -55,4 +56,18 @@ trainer = Trainer(
     tokenizer=tokenizer)
 
 trainer.train()
-trainer.save_model('/scratch/rb4987/GPTJ_difficulty')
+
+eval_metrics = trainer.evaluate()
+print('EVAL METRICS:\n')
+# with open(f'./results/roberta_finetuned_ep={num_epochs}_batch={batch_size}/eval_metrics') as f:
+#     f.write(eval_metrics.tolist())
+
+test = RaceDataset('test', tokenizer)
+test.preprocess_dataset()
+
+pred_out = trainer.predict(test)
+print('PREDICTION METRICS:\n')
+# with open(f'./results/roberta_finetuned_ep={num_epochs}_batch={batch_size}/predictions') as f:
+#     f.write(pred_out.tolist())
+print(pred_out)
+

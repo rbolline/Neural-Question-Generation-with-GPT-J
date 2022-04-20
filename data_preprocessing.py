@@ -13,7 +13,9 @@ class RaceDataset(Dataset):
 
     def __init__(self, split: string, tokenizer):
         # Load and convert dataset from pyarrow to pandas df
-        self.dataset = load_dataset('race', 'all')[split].to_pandas().iloc[:1000]
+        self.dataset = load_dataset('race', 'all')[split].to_pandas()
+        self.dataset = self.dataset.sample(frac=0.12, random_state=1).reset_index(drop=True)
+        # print(self.dataset.iloc[:5])
         self.encoded_data = []
         self.tokenizer = tokenizer
         self.labels = []
@@ -34,8 +36,7 @@ class RaceDataset(Dataset):
         df['answer'] = df['answer'].map({'A':0, 'B':1, 'C':2, 'D':3})
         # Replace list comprehension for speed
         ans_list = []
-        print(df['answer'].iat[1])
-
+        
         for i in range(len(df['answer'])):
             # print(df['answer'].iat[i])
             # print(df['options'].iat[i][2])
@@ -53,8 +54,7 @@ class RaceDataset(Dataset):
 
         # Map is_valid_options to every question
         is_valid_series = options_series.map(is_valid_options)
-        num_dropped = is_valid_series.value_counts()[False]
-        print(f'Dropped {num_dropped} rows with only numeric answers')
+        #num_dropped = is_valid_series.value_counts()[False]
 
         return df[is_valid_series]
 
@@ -73,7 +73,13 @@ class RaceDataset(Dataset):
         val_df = val_df[ val_df.question.str.replace(',','').str.split().str.len() > 5 ]
         
         self.dataset = val_df
+   
+
+        # print((self.dataset['answer'].iloc[:5]))
         self.encoded_data, self.labels = encode_data(self.dataset, self.tokenizer)
-        self.labels = self.labels.reset_index(drop=True)
+        self.labels = self.labels.tolist()
         self.processed = True
+    def test_dataset(self, dataset):
+        self.encoded_data, self.labels = encode_data(dataset, self.tokenizer)
+        self.labels = self.labels.tolist()
 
