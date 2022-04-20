@@ -74,7 +74,7 @@ The last thing you figure out in writing a [paper] is what to put first - Pascal
 
 Asking good questions forms an essential part of assessing a student’s grasp of certain concepts. Instructors spend considerable time constructing exam and assignment questions that assess students on material taught in the classroom. Questions often need to be continuously replaced over time as questions become shared or publicly available. Often, human instructors may not come up with the clearest questions \citep{human-eval:7}. Neural Question Generation (QG) systems aim to automate the process of question construction by generating novel questions given a particular context, thus reducing time and costs of question generation for educators and test developers. Advanced QG systems with configurable parameters could help offer students custom material based on their individual ability, and act as a foundation for adaptive testing and learning \citep{adaptive-education:8}. 
 
-Recent work in QG has focused on generating quiz-style questions \citep{Quiz:1}, with particular focus on generating questions of selected difficulty levels \citep{Difficulty:3}. However, these techniques have relied on fine-tuning a language model on a task-specific dataset such as SQuAD or RACE \citep{RACE:2}. These models are limited in their domain of use and do not generalize out-of-distribution (citation???). Moreover, constructing such datasets is time-consuming and costly, and thus not a viable means for widespread adoption. In this paper, we propose using GPT-J in a zero-shot setting to produce questions that are \textit{fluent} in linguistic construction, \textit{relevant} to the input context, and appropriately \textit{difficult} as requested in the input. We compare our work against a baseline GPT-J model fine-tuned on the task.
+Recent work in QG has focused on generating quiz-style questions \citep{Quiz:1}, with particular focus on generating questions of selected difficulty levels \citep{Difficulty:3}. However, these techniques have relied on fine-tuning a language model on a task-specific dataset such as SQuAD or RACE. These models are limited in their domain of use, cumbersome to train, and do not generalize out-of-distribution (citation???). Moreover, constructing datasets to train such models is time-consuming and costly, and thus not a viable means for widespread adoption. In this paper, we propose using GPT-J in a zero-shot setting to produce questions that are fluent in linguistic construction, relevant to the input context, and appropriately difficult as requested in the input. We compare our work against a baseline GPT-J model fine-tuned on the task.
 
 In the context of reading comprehension, we look at two types of QG variants. In answer-focused QG, a reference passage and an answer are passed as inputs into the system, resulting in the generation of questions relevant to the input answer. In general QG, only a context passage is passed as input, resulting in the generation of unmapped questions relevant to the context.
 
@@ -82,11 +82,11 @@ In the context of reading comprehension, we look at two types of QG variants. In
 
 \subsection{Data}
 
-We use RACE, a compilation of reading comprehension questions from middle and high school English exams administered to Chinese students, to fine tune and prompt our GPT-J model. Questions that are generic (i.e less than 5 words, non-specific to the context, etc.) are dropped, alongside with any questions with numeric answers, in order to prevent the model from generating vague questions (???). 
+We use RACE \citep{RACE:2}, a compilation of reading comprehension questions from middle and high school English exams administered to Chinese students, to fine tune and prompt our GPT-J model. Questions that are generic (i.e less than 5 words, non-specific to the context, etc.) are dropped, alongside with any questions with numeric answers, in order to prevent the model from generating vague questions (???). 
 
-For the answer-focused setting, training inputs to the QG model are composed of a question, an answer, a context and a difficulty. We determine difficulty by mapping middle school questions to \textit{easy} and high school questions to \textit{hard} difficulties.   ---- data points are used for fine-tuning, and 1695 for testing. The same 1695 datapoints are used for prompting in the zero shot setting. We only use contexts that have at least two associated questions, in order to allow for zero shot prompting for every test context.  
+For the answer-focused setting, training inputs to the QG model are composed of a question, an answer, a context and a difficulty. We determine difficulty by mapping middle school questions to \textit{easy} and high school questions to \textit{hard} difficulties.   ---- data points are used for fine-tuning, and 1695 for testing. The same 1695 datapoints are used for prompting in the zero shot setting. We only use contexts that have at least two associated questions, in order to allow for zero shot prompting for every test context. A similar input is used for the general setting, except no answer is included.  ---- data points are used for general fine-tuning, and ---- for general prompting in the zero shot setting. 
 
-A similar input is used for the general setting, except no answer is included.  ---- data points are used for general fine-tuning, and ---- for general prompting in the zero shot setting. We experiment with various prompts for the zero shot setting (insert future prompt variant info here). An example of the zero shot input prompt is shown below: 
+We experiment with various prompts for the zero shot setting (insert future prompt variant info here). An example of the zero shot input prompt is shown below: 
 
 \begin{quote}
 \textbf{Context}: Although most weddings follow long-held traditions, there's still room for American individualism. For example, the usual place for a wedding is in a church. But some people get married outdoors in a scenic spot. A few even have the ceremony while skydiving or riding on horseback! The couple may invite hundreds of people or just a few close friends. They choose their own style of colors, decorations and music during the ceremony. But some things rarely change. The bride usually wears a beautiful long white wedding dress. She traditionally wears "something old, something new, something borrowed and something blue." The groom wears a formal suit.
@@ -99,7 +99,7 @@ A similar input is used for the general setting, except no answer is included.  
 
 \end{quote}
 
-In this instance, the true question is "Which of the following best shows American individualism?"
+In this instance, the true reference question is "Which of the following best shows American individualism?"
 
 \subsection{Model \& Tools}
 
@@ -122,7 +122,8 @@ return-dict-in-generate & False \\
 \end{tabular}
 \end{table}
 
-We perform model training on NYU GCP. For the zero-shot setting, we utilize ---- . All code can be found in our \href{https://github.com/rbolline/Neural-Question-Generation-with-GPT-J}{Github repository}. 
+For difficulty classification, we use RoBERTa.
+We perform model training on NYU GCP. All code can be found in our \href{https://github.com/rbolline/Neural-Question-Generation-with-GPT-J}{Github repository}. 
 
 
 
@@ -130,56 +131,73 @@ We perform model training on NYU GCP. For the zero-shot setting, we utilize ----
 
 Generated questions are evaluated on three criteria: fluency, relevancy, and difficulty. Generally, we use a mix of manual human-centric evaluation, the gold standard in evaluating outputs from NLG systems \citep{human-eval:7}, and limited use of automated model based evaluations.
 
-\textbf{Fluency} determines weather a question is easy to read and understand, without taking the source (passage or reference question) into account, and is manually evaluated on a 0-3 Likert scale (ranging from poor to excellent). \textbf{Relevancy} \cite{relevancy:5} determines whether the generated questions and input questions are topically related, and measured using manual evaluation on a 0-3 Likert scale (ranging from relevant to irrelevant) as well as with evaluation metrics including BLEU (which we use to measures N-gram overlap between reference text and generated text), BLEURT (which uses a transformer model trained to score the similarity between a reference and hypothesis text) and ROUGE-L (which measures the recall and precision of longest common subsequence between a reference and hypothesis
-text). \textbf{Difficulty} is determined by checking if the generated question’s difficulty matches that of the input difficulty fed to the model, and is measured in an automated way using a GPT-J classifier trained on RACE to classify questions as easy or hard. We compare the classifier's output difficulty with the requested difficulty from the input, and evaluate the F1 score.  
+\textbf{Fluency} determines weather a question is easy to read and understand, without taking the source (passage or reference question) into account, and is manually evaluated on a 0-2 Likert scale (ranging from poor to excellent). \textbf{Relevancy} \cite{relevancy:5} determines whether the generated questions and input questions are topically related, and measured using manual evaluation on a 0-2 Likert scale (ranging from relevant to irrelevant) as well as with evaluation metrics including BLEU (which we use to measures N-gram overlap between reference text and generated text) \citep{bleu:12}, BLEURT (which uses a transformer model trained to score the similarity between a reference and hypothesis text) \citep{bleurt:11} and ROUGE-L (which measures the recall and precision of longest common subsequence between a reference and hypothesis text) \citep{rouge:13}. \textbf{Difficulty} is determined by checking if the generated question’s difficulty matches that of the input difficulty fed to the model, and is measured in an automated way using a GPT-J classifier trained on RACE to classify questions as easy or hard. We compare the classifier's output difficulty with the requested difficulty from the input, and evaluate the F1 score.  
 
 \section{Results}
 
-\section{Discussion}
+\begin{table}[h]
+\centering
+\begin{tabular}{lll}
+\hline
+\textbf{Metric} & \textbf{Finetuned} & \textbf{Zeroshot}\\
+\hline
+Fluency & 0.0 & 0.0 \\
+Relevancy & 0.0 & 0.0 \\
+Difficulty & 0.0 & 82.0 \\
+\hline
+\end{tabular}
+\end{table}
 
-\section{Collaboration}
-
-Credit to Sukhrit Rao for formulating the question. He build out most of the training and inference scripts for the GPT-J model, prompt design  
-Credit to Rohit Bollineni for writing the training script 
-Credit to Hasan Khan for paper writing, pulling references together, and figure design.
-
-All team members worked on manual evaluations of the questions generated 
-
-
-\subsection{Hyperlinks}
-
-Users of older versions of \LaTeX{} may encounter the following error during compilation: 
-\begin{quote}
-\tt\verb|\pdfendlink| ended up in different nesting level than \verb|\pdfstartlink|.
-\end{quote}
-This happens when pdf\LaTeX{} is used and a citation splits across a page boundary. The best way to fix this is to upgrade \LaTeX{} to 2018-12-01 or later.
-
-\subsection{Citations}
+The table above show our results for GPT-J outputs in the zeroshot and finetuned settings on the metrics of fluency, relevancy and difficulty as defined in Evaluations. 
 
 \begin{table*}
 \centering
 \begin{tabular}{lll}
 \hline
-\textbf{Output} & \textbf{natbib command} & \textbf{Old ACL-style command}\\
+\textbf{Reference Question} & \textbf{Answer} & \textbf{Generated Question}\\
 \hline
-\citep{Gusfield:97} & \verb|\citep| & \verb|\cite| \\
-\citealp{Gusfield:97} & \verb|\citealp| & no equivalent \\
-\citet{Gusfield:97} & \verb|\citet| & \verb|\newcite| \\
-\citeyearpar{Gusfield:97} & \verb|\citeyearpar| & \verb|\shortcite| \\
+* & * & * \\
+\hline
+* & * & * \\
+\hline
+* & * & * \\
+\hline
+* & * & * \\
 \hline
 \end{tabular}
 \caption{\label{citation-guide}
-Citation commands supported by the style file.
-The style is based on the natbib package and supports all natbib citation commands.
-It also supports commands defined in previous ACL style files for compatibility.
+Questions generated by GPT-J in a zero shot setting
 }
 \end{table*}
 
-Table~\ref{citation-guide} shows the syntax supported by the style files.
-We encourage you to use the natbib styles.
-You can use the command \verb|\citet| (cite in text) to get ``author (year)'' citations, like this citation to a paper by \citet{Gusfield:97}.
-You can use the command \verb|\citep| (cite in parentheses) to get ``(author, year)'' citations \citep{Gusfield:97}.
-You can use the command \verb|\citealp| (alternative cite without parentheses) to get ``author, year'' citations, which is useful for using citations within parentheses (e.g. \citealp{Gusfield:97}).
+\begin{table*}
+\centering
+\begin{tabular}{lll}
+\hline
+\textbf{Reference Question} & \textbf{Answer} & \textbf{Generated Question}\\
+\hline
+* & * & * \\
+\hline
+* & * & * \\
+\hline
+* & * & * \\
+\hline
+* & * & * \\
+\hline
+\end{tabular}
+\caption{\label{citation-guide}
+Questions generated by finetuned GPT-J 
+}
+\end{table*}
+
+\section{Discussion}
+
+\section{Collaboration}
+Credit to Sukhrit Rao for formulating the project question. He wrote and ran the training and inference scripts for both GPT-J question generating models, prompt design, and evaluation metrics.
+Credit to Rohit Bollineni for writing the training script, building the difficulty classification model
+Credit to Hasan Khan for question preprocessing, paper writing, and pulling references together. All team members worked on manual evaluations of the questions generated 
+
+
 
 \subsection{References}
 
