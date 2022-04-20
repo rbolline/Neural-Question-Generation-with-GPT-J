@@ -31,7 +31,7 @@
 %
 % and set <dim> to something 5cm or larger.
 
-\title{Zero-shot Question Generation with GPT-J}
+\title{Few-Shot Question Generation with GPT-J}
 
 % Author information can be set in various styles:
 
@@ -51,255 +51,173 @@
 %         Author 2 \\ Address line \\ ... \\ Address line \And
 %         Author 3 \\ Address line \\ ... \\ Address line}
 
-\author{Sukhrit Rao \\
+\author{Sukrit Rao \\
+  Center for Data Science \\
   New York University \\
   \texttt{str8775@nyu.edu} \\\And
-  Rohit Bollineni \\
+  Rohith Bollineni \\
+  Center for Data Science \\
   New York University \\
   \texttt{rb4987@nyu.edu} \\\And
   Hasan Khan \\
+  Courant Institute \\ 
   New York University \\
   \texttt{hk3550@nyu.edu} \\}
 
 \begin{document}
 \maketitle
 \begin{abstract}
-The last thing you figure out in writing a [paper] is what to put first - Pascal
+Neural Question Generation (QG) systems aim to automate the process of question construction by generating novel questions given a particular context, thus reducing time and costs of question generation for educators and test developers. We propose Question Generation using GPT-J in a few-shot setting. Generating questions in this manner reduces time and resource cost required to construct datasets and fine-tune increasingly complex models like GPT-J, thereby increasing usage for educational purposes such as adaptive education. We compare our results against a GPT-J model fine-tuned on the task. 
 \end{abstract}
 
 \section{Introduction}
 
-Asking good questions forms an essential part of assessing a student’s grasp of certain concepts. Instructors spend considerable time constructing exam and assignment questions that assess students on material taught in the classroom. Neural Question Generation (QG) systems aim to automate the process of question construction by generating novel questions given a particular context. QG systems with configurable difficulty settings could help offer students custom material based on their individual ability, and act as a foundation for adaptive learning (citation???). 
+Asking relevant questions of varying difficulty forms an essential part of assessing a student’s grasp of concepts. Instructors are required to spend considerable amounts of time constructing exam and assignment questions that assess students on material taught in the classroom.
+In this process of question creation, instructors must make sure that the questions cannot all be of similar difficulty and must range from easy to difficult to ensure optimum learning outcomes. Additionally, questions often need to be replaced continually as content is revised to reflect the latest updates in the domain or because the questions become publicly available. Another aspect that affects learning outcomes is the student's aptitude and pre-existing knowledge. In classroom settings, learning takes place in groups in which some students would be stronger in the concepts the material tests while others would not and would require additional practice and/or instruction. As a result, applying universal pedagogy in such settings is not ideal. \citep{personalized-learning:9}  Adaptive education systems have great potential to improve learning outcomes by increasing accessibility \citep{adaptive-education:8}. 
 
-Recent work in QG has focused on generating quiz-style questions \citep{Quiz:1}, with particular focus on generating questions of selected difficulty levels \citep{Difficulty:3}. However, these techniques have relied on fine-tuning a language model on a task-specific dataset such as SQuAD or RACE \citep{RACE:2}. These models are limited in their domain of use and do not generalize out-of-distribution (citation???). Moreover, constructing such datasets is time-consuming and costly, and thus not a viable means for widespread adoption. In this paper, we propose using GPT-J in a zero-shot setting to produce questions that are \textit{fluent} in linguistic construction, \textit{relevant} to the input context, and appropriately \textit{difficult} as requested in the input. We compare our work against a GPT-J model fine-tuned on the task.
+Neural Question Generation (QG)  \citep{question-generation:10} systems aim to automate the process of question construction by generating novel questions given a particular context, thus reducing time and costs of question generation for educators and test developers. Advanced QG systems with configurable parameters could help offer students custom material based on their individual ability, and act as a foundation for adaptive testing and learning. 
 
-In the context of reading comprehension, we look at two types of QG variants. In answer-focused QG, a reference passage and an answer are passed as inputs into the system, resulting in the generation of questions relevant to the input answer. In general QG, only a reference passage is passed as input, resulting in the generation of unmapped questions relevant to the context.
+Recent work in QG has focused on generating quiz-style questions \citep{Quiz:1}, with particular focus on generating questions of selected difficulty levels \citep{Difficulty:3}. However, these techniques have relied on fine-tuning a language model on a task-specific dataset such as SQuAD \citep{squad:11} or RACE \citep{RACE:2}. As a result, these models are limited in their domain of use. Moreover, constructing such datasets that contain thousands of examples, specific to that task, is time-consuming and costly, and thus not a viable means for widespread adoption. In this paper, we propose using GPT-J in a few-shot setting to produce questions that are fluent in linguistic construction, relevant to the input context, and appropriately difficult as desired. We compare our work against a GPT-J model fine-tuned on the task.
 
-\section{Method}
+In the context of reading comprehension, we look at two types of QG variants. In answer-focused QG, a reference passage and an answer are passed as inputs into the system, resulting in the generation of questions relevant to the input answer. In general QG, only a context passage is passed as input, resulting in the generation of unmapped questions relevant to the context.
+
+\section{Related Work}
+
+\subsection{Difficulty Controllable Question Generation}
+
+DQG discusses a framework to generate questions given a difficulty level along with the context and answer. Bidirectional LSTMs are used to encode the input. For the decoder, another LSTM is used along with a global difficulty control variable trained on ground truth difficulty labels. The authors use R-Net and BiDAF to assess the difficulty of a question; if both models guess correctly then it is labeled easy; if both models fail then it is labeled hard. 
+
+\subsection{Quiz Style Question Generation}
+As mentioned above, \citep{Quiz:1} focuses on quiz style questions as part of the NewsQuizQA dataset. Unlike prior datasets like SQuAD, prior context does not have a strong impact on the NewsQuizQA dataset with regards to generating questions which reference source text. NewsQuizQA implements Minimum Reference Loss to judge its models, allowing for multiple correct outputs based on how well results match with QA pairs. This metric style allows for some open ended behavior from the model.
+
+\subsection{Evaluation of Text Generation: A Survey}
+This paper \citep{text-gen-survey:13} serves as a framework for evaluation metrics used to judge machine generated text. The authors delineate three categories of evaluation. Human-centric evaluation involves humans (often experts) judging the quality of generated text, usually through manual review. Untrained automatic evaluation focuses on comparing text generated by models with human written text (such as BLEU, BLEURT and ROUGE).  Machine-learned evaluation involved a machine learning model acting in place of a human judge to determine similarities in human vs. machine (or machine vs. machine) generated texts. All three categories of evaluation are used in our paper, discussed further in the evalatuation section.
+
+
+\section{Methodology}
 
 \subsection{Data}
 
-We use RACE, a compilation of reading comprehension questions from middle and high school English exams administered to Chinese students, to fine tune and prompt our GPT-J model. Questions that are generic (i.e less than 5 words, non-specific to the context, etc.) are dropped, alongside with any questions with numeric answers, in order to prevent the model from generating vague questions (???). 
+We use RACE \citep{RACE:2}, a compilation of reading comprehension questions from middle and high school English exams administered to Chinese students, to fine-tune and prompt our GPT-J model. We choose RACE since "the difficulty of RACE questions mostly comes from the understanding of the story but not from the way how the question is asked." \citet{Difficulty:3} (p.2), which is what one finds in the education domain. Moreover, RACE categorizes questions into either \textit{middle} or \textit{high}, based on their relative difficulty. As a result, no manual labeling is required to obtain difficulty labels for questions.
 
-For the answer-focused setting, training inputs to the QG model are composed of a question, an answer, a context and a difficulty. We determine difficulty by mapping middle school questions to \textit{easy} and high school questions to \textit{hard} difficulties.   ---- data points are used for fine-tuning, and 1695 for testing. The same 1695 datapoints are used for prompting in the zero shot setting. We only use contexts that have at least two associated questions, in order to allow for zero shot prompting for every test context.  
+Questions that are generic (i.e less than 5 words, non-specific to the context, etc.) are dropped in order to prevent the model from generating irrelevant questions.
 
-A similar input is used for the general setting, except no answer is included.  ---- data points are used for general fine-tuning, and ---- for general prompting in the zero shot setting. We experiment with various prompts for the zero shot setting (insert future prompt variant info here). An example of the zero shot input prompt is shown below: 
+For the answer-focused setting, training inputs to the QG model are composed of a question, an answer, a context and a desired difficulty of the generated question. We determine difficulty by mapping middle school questions to \textit{easy} and high school questions to \textit{hard} difficulties. 31051 data points are used for fine-tuning, and 1695 for testing. We only use context passages that have at least two associated questions, in order to allow for the prompt to contain at least one example for every test context. A similar input is used for the general setting, except no answer is included. 
+
+We experiment with various prompts for the few-shot setting (insert future prompt variant info here). An example of the input prompt used in the few-shot setting is shown below: 
 
 \begin{quote}
-\textbf{Context}: Although most weddings follow long-held traditions, there's still room for American individualism. For example, the usual place for a wedding is in a church. But some people get married outdoors in a scenic spot. A few even have the ceremony while skydiving or riding on horseback! The couple may invite hundreds of people or just a few close friends. They choose their own style of colors, decorations and music during the ceremony. But some things rarely change. The bride usually wears a beautiful long white wedding dress. She traditionally wears "something old, something new, something borrowed and something blue." The groom wears a formal suit.
+\textbf{Context}: "Family" is of course an elastic word. But when British people say that their society is based on family life, they are thinking of "family" in its narrow, peculiarly European sense of mother ,father and children living together alone in their own house as an economic and social unit. Thus, every British marriage indicates the beginning of a new and independent family--hence the tremendous importance of marriage in British life. Readers of novels like Jane Austen's Pride and Prejudice will know that in former times marriage among wealthy families were arranged by the girl's parents, that is, it was the parents' duty to find a suitable husband for their daughter, preferably a rich one, and by skillful encouragement to lead him eventually to ask their permission to marry her. 
 
 \textbf{Difficulty}: Hard. 
 
-\textbf{Answer}: Some people choose their own style of weddings. 
+\textbf{Answer}: It gives quite some idea of English social life in the past.
 
-\textbf{Question}:
+\textbf{Question}: What is true concerning the book Pride and Prejudice?
+
+\textbf{Difficulty}: Hard. 
+
+\textbf{Answer}: Different definitions could be given to the word.
+
+\textbf{Question}: 
 
 \end{quote}
 
-In this instance, the true question is "Which of the following best shows American individualism?"
+In this instance, the true reference question is "What does the author mean by "Family is of course an elastic word"?"
 
-\subsection{Model}
+\subsection{Model \& Tools}
 
-We choose GPT-J-6B \citep{gpt-j:4} for its manageable parameter size (6 billion) and open-source code, allowing us to fine-tune the model. We use the following model parameter values: 
+For our experiments, we select GPT-J-6B \citep{gpt-j:4} pulled from HuggingFace. We choose this model as it performs well in a zero-shot setting \citep{gpt-j:4} and for its manageable parameter size (6 billion) and open-source code, allowing us to compare performance between a fine-tuned model and a model used in a few-shot setting. During decoding, we use a \textbf{temperature} value of 1.0, \textbf{top-k} of 50, and \textbf{top-p} of 1.0. We set a \textbf{length penalty} of 0.8 to favor shorter sequences
 
-\begin{table}[h]
-\centering
-\begin{tabular}{lc}
-\hline
-\textbf{Parameter} & \textbf{Value}\\
-\hline
-do-sample & True \\
-temperature & 1.0 \\
-max-new-tokens & 250 \\
-top-k & 50 \\ 
-top-p & 1.0  \\ 
-length_penalty & 0.8 \\
-return-dict-in-generate & False \\
-\hline
-\end{tabular}
-\end{table}
+For difficulty classification, we use RoBERTa \citep{roberta:12}. The model is trained with a classification head, taking in a combined input of context, question, and answer with the difficulty labels of 'hard' and 'easy'. Training is performed for 3781 examples, evaluation on 222 examples, and testing on 197 samples. The data is preprocessed to follow a similar ruleset to \citet{Difficulty:3}, with some adjustments.
+
+We perform model training on NYU HPC. All code can be found in our \href{https://github.com/rbolline/Neural-Question-Generation-with-GPT-J}{Github repository}. 
 
 
 \subsection{Evaluation}
 
-Generated questions are evaluated on three criteria: fluency, relevancy, and difficulty. Fluency is defined as ----, and measured using ----- . Relevancy is defined as ----, and measured using ----- . Difficulty is defined as ----, and measured using ----- . 
+Generated questions are evaluated along three dimensions: fluency, relevancy, and difficulty. Generally, we use a mix of manual human-centric evaluation, automatic metrics and Machine-Learned metrics as described above.
+
+\textbf{Fluency} determines weather a generated question is easy to read and understand, without taking the source (passage or reference question) into account, and is manually evaluated on a 0-2 Likert scale (ranging from poor to excellent). \textbf{Relevancy} determines whether the generated questions and input reference questions are topically related \citep{relevancy:14}, and is measured using manual evaluation on a 0-1 Likert scale (either relevant or irrelevant) as well as with evaluation metrics including BLEU \citep{BLEU:6}, ROUGE-L \citep{rouge:5} and BLEURT, \citep{bleurt:7} a learned evaluation metric that captures the semantic similarities between two pieces of text. These untrained automatic metrics are computed between the reference question from RACE and the question by GPT-J. \textbf{Difficulty} is determined by checking if the generated question’s difficulty matches that of the input difficulty fed to the model, and is measured as a Machine-Learned metric using a RoBERTa \citep{roberta:12} classifier trained on RACE to classify questions as being either easy or hard. We compare the classifier's output difficulty with the desired difficulty from the input, and evaluate the F1 score.  
 
 \section{Results}
 
-The first line of the file must be
-\begin{quote}
-\begin{verbatim}
-\documentclass[11pt]{article}
-\end{verbatim}
-\end{quote}
-
-To load the style file in the review version:
-\begin{quote}
-\begin{verbatim}
-\usepackage[review]{acl}
-\end{verbatim}
-\end{quote}
-For the final version, omit the \verb|review| option:
-\begin{quote}
-\begin{verbatim}
-\usepackage{acl}
-\end{verbatim}
-\end{quote}
-
-To use Times Roman, put the following in the preamble:
-\begin{quote}
-\begin{verbatim}
-\usepackage{times}
-\end{verbatim}
-\end{quote}
-(Alternatives like txfonts or newtx are also acceptable.)
-
-Please see the \LaTeX{} source of this document for comments on other packages that may be useful.
-
-Set the title and author using \verb|\title| and \verb|\author|. Within the author list, format multiple authors using \verb|\and| and \verb|\And| and \verb|\AND|; please see the \LaTeX{} source for examples.
-
-By default, the box containing the title and author names is set to the minimum of 5 cm. If you need more space, include the following in the preamble:
-\begin{quote}
-\begin{verbatim}
-\setlength\titlebox{<dim>}
-\end{verbatim}
-\end{quote}
-where \verb|<dim>| is replaced with a length. Do not set this length smaller than 5 cm.
-
-\section{Document Body}
-
-\subsection{Footnotes}
-
-Footnotes are inserted with the \verb|\footnote| command.\footnote{This is a footnote.}
-
-\subsection{Tables and figures}
-
-See Table~\ref{tab:accents} for an example of a table and its caption.
-\textbf{Do not override the default caption sizes.}
-
-\begin{table}
+\begin{table}[h]
 \centering
-\begin{tabular}{lc}
+\begin{tabular}{lcc}
 \hline
-\textbf{Command} & \textbf{Output}\\
+\textbf{Metric} & \textbf{Finetuned} & \textbf{One-Shot}\\
 \hline
-\verb|{\"a}| & {\"a} \\
-\verb|{\^e}| & {\^e} \\
-\verb|{\`i}| & {\`i} \\ 
-\verb|{\.I}| & {\.I} \\ 
-\verb|{\o}| & {\o} \\
-\verb|{\'u}| & {\'u}  \\ 
-\verb|{\aa}| & {\aa}  \\\hline
-\end{tabular}
-\begin{tabular}{lc}
-\hline
-\end{tabular}
-\caption{Example commands for accented characters, to be used in, \emph{e.g.}, Bib\TeX{} entries.}
-\label{tab:accents}
-\end{table}
-
-\subsection{Hyperlinks}
-
-Users of older versions of \LaTeX{} may encounter the following error during compilation: 
-\begin{quote}
-\tt\verb|\pdfendlink| ended up in different nesting level than \verb|\pdfstartlink|.
-\end{quote}
-This happens when pdf\LaTeX{} is used and a citation splits across a page boundary. The best way to fix this is to upgrade \LaTeX{} to 2018-12-01 or later.
-
-\subsection{Citations}
-
-\begin{table*}
-\centering
-\begin{tabular}{lll}
-\hline
-\textbf{Output} & \textbf{natbib command} & \textbf{Old ACL-style command}\\
-\hline
-\citep{Gusfield:97} & \verb|\citep| & \verb|\cite| \\
-\citealp{Gusfield:97} & \verb|\citealp| & no equivalent \\
-\citet{Gusfield:97} & \verb|\citet| & \verb|\newcite| \\
-\citeyearpar{Gusfield:97} & \verb|\citeyearpar| & \verb|\shortcite| \\
+Fluency & & \\ 
+\hspace{0.5cm} Manual & - & 1.27 \\
+Relevancy & & \\
+\hspace{0.5cm} Manual & - & 0.18 \\
+\hspace{0.5cm} BLEU-1 & - & 1.40 \\
+\hspace{0.5cm} BLEU-2 & - & 0.00 \\
+\hspace{0.5cm} BLEU-3 & - & 0.00 \\
+\hspace{0.5cm} BLEU-4 & - & 0.00 \\
+\hspace{0.5cm} ROUGE-L & - & 16.0 \\
+\hspace{0.5cm} BLEURT & - & 32.31 \\
+Difficulty & & \\
+\hspace{0.5cm} RoBERTa & - & 82.00 \\
 \hline
 \end{tabular}
 \caption{\label{citation-guide}
-Citation commands supported by the style file.
-The style is based on the natbib package and supports all natbib citation commands.
-It also supports commands defined in previous ACL style files for compatibility.
+Results from GPT-J. Manual fluency and relevancy are averages calculated over manual human evaluation scores. Further untrained metrics are included for relevancy. Difficulty is the F1 score achieved by the difficulty classifier  
 }
-\end{table*}
+\end{table}
 
-Table~\ref{citation-guide} shows the syntax supported by the style files.
-We encourage you to use the natbib styles.
-You can use the command \verb|\citet| (cite in text) to get ``author (year)'' citations, like this citation to a paper by \citet{Gusfield:97}.
-You can use the command \verb|\citep| (cite in parentheses) to get ``(author, year)'' citations \citep{Gusfield:97}.
-You can use the command \verb|\citealp| (alternative cite without parentheses) to get ``author, year'' citations, which is useful for using citations within parentheses (e.g. \citealp{Gusfield:97}).
+Results on all three evaluation metrics are included above. See Appendix on page 5 for example generated questions. 
 
-\subsection{References}
+\section{Collaboration}
+Credit to Sukrit Rao for formulating the project question. He developed and executed the inference scripts for the GPT-J question generating models, prompt design, and developed scripts for the automated evaluation metrics.
+Credit to Rohith Bollineni for writing the training/evaluation script, building the difficulty classification model.
+Credit to Hasan Khan for question preprocessing, a majority of the paper writing, and pulling references together. All team members worked on manual evaluations of the generated questions. 
 
-\nocite{Ando2005,borschinger-johnson-2011-particle,andrew2007scalable,rasooli-tetrault-2015,goodman-etal-2016-noise,harper-2014-learning}
 
-The \LaTeX{} and Bib\TeX{} style files provided roughly follow the American Psychological Association format.
-If your own bib file is named \texttt{custom.bib}, then placing the following before any appendices in your \LaTeX{} file will generate the references section for you:
-\begin{quote}
-\begin{verbatim}
-\bibliographystyle{acl_natbib}
-\bibliography{custom}
-\end{verbatim}
-\end{quote}
 
-You can obtain the complete ACL Anthology as a Bib\TeX{} file from \url{https://aclweb.org/anthology/anthology.bib.gz}.
-To include both the Anthology and your own .bib file, use the following instead of the above.
-\begin{quote}
-\begin{verbatim}
-\bibliographystyle{acl_natbib}
-\bibliography{anthology,custom}
-\end{verbatim}
-\end{quote}
-
-Please see Section~\ref{sec:bibtex} for information on preparing Bib\TeX{} files.
-
-\subsection{Appendices}
-
-Use \verb|\appendix| before any appendix section to switch the section numbering over to letters. See Appendix~\ref{sec:appendix} for an example.
-
-\section{Bib\TeX{} Files}
-\label{sec:bibtex}
-
-Unicode cannot be used in Bib\TeX{} entries, and some ways of typing special characters can disrupt Bib\TeX's alphabetization. The recommended way of typing special characters is shown in Table~\ref{tab:accents}.
-
-Please ensure that Bib\TeX{} records contain DOIs or URLs when possible, and for all the ACL materials that you reference.
-Use the \verb|doi| field for DOIs and the \verb|url| field for URLs.
-If a Bib\TeX{} entry has a URL or DOI field, the paper title in the references section will appear as a hyperlink to the paper, using the hyperref \LaTeX{} package.
 
 \section*{Acknowledgements}
 
-This document has been adapted
-by Steven Bethard, Ryan Cotterell and Rui Yan
-from the instructions for earlier ACL and NAACL proceedings, including those for 
-ACL 2019 by Douwe Kiela and Ivan Vuli\'{c},
-NAACL 2019 by Stephanie Lukin and Alla Roskovskaya, 
-ACL 2018 by Shay Cohen, Kevin Gimpel, and Wei Lu, 
-NAACL 2018 by Margaret Mitchell and Stephanie Lukin,
-Bib\TeX{} suggestions for (NA)ACL 2017/2018 from Jason Eisner,
-ACL 2017 by Dan Gildea and Min-Yen Kan, 
-NAACL 2017 by Margaret Mitchell, 
-ACL 2012 by Maggie Li and Michael White, 
-ACL 2010 by Jing-Shin Chang and Philipp Koehn, 
-ACL 2008 by Johanna D. Moore, Simone Teufel, James Allan, and Sadaoki Furui, 
-ACL 2005 by Hwee Tou Ng and Kemal Oflazer, 
-ACL 2002 by Eugene Charniak and Dekang Lin, 
-and earlier ACL and EACL formats written by several people, including
-John Chen, Henry S. Thompson and Donald Walker.
-Additional elements were taken from the formatting instructions of the \emph{International Joint Conference on Artificial Intelligence} and the \emph{Conference on Computer Vision and Pattern Recognition}.
+We would like to thank our Professor Sam Bowman and TA Richard Pang for their assistance and guidance through the development of this paper.
 
+\newpage
 % Entries for the entire Anthology, followed by custom entries
 \bibliography{citations}
 \bibliographystyle{acl_natbib}
 
+\clearpage
+
 \appendix
+\section{Appendix}
 
-\section{Example Appendix}
-\label{sec:appendix}
+\begin{table}[!hbt]
+\centering
+\begin{tabular}{|p{3cm}|p{4cm}|p{4cm}|p{3.5cm}|}
+\hline
+\textbf{Desired Difficulty} & \textbf{Reference Question} & \textbf{Generated Question} & \textbf{Answer}\\
+\hline
+Hard & 
+What is special about the pens produced in 1234 PENS? & 
+Why would you choose 1234 PENS? &  
+Their material is less harmful to the earth\\
+\hline
+Hard & 
+What would be the best title for the passage?  & 
+How is it to climb from the Tibetan side of Mt. Everest? & 
+California teen becomes youngest to climb Mt. Everest\\
+\hline
+Easy & 
+What can be the best title for the passage ? & 
+What do you think is the moral of the story? & 
+Love Saves All\\
+\hline
+\end{tabular}
+\caption{\label{citation-guide}
+Questions generated by GPT-J in a one-shot setting}
+\end{table}
 
-This is an appendix.
+\clearpage
+
 
 \end{document}
