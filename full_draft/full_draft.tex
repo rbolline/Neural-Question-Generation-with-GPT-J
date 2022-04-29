@@ -73,9 +73,9 @@ Neural Question Generation (QG) systems aim to automate the process of question 
 \section{Introduction}
 
 Asking relevant questions of varying difficulty forms an essential part of assessing a student’s grasp of concepts. Instructors are required to spend considerable amounts of time constructing exam and assignment questions that assess students on material taught in the classroom.
-In this process of question creation, instructors must make sure that the questions cannot all be of similar difficulty and must range from easy to difficult to ensure optimum learning outcomes. Additionally, questions often need to be replaced continually as content is revised to reflect the latest updates in the domain or because the questions become publicly available. Another aspect that affects learning outcomes is the student's aptitude and pre-existing knowledge. In classroom settings, learning takes place in groups in which some students would be stronger in the concepts the material tests while others would not and would require additional practice and/or instruction. As a result, applying universal pedagogy in such settings is not ideal. \citep{personalized-learning:9}  Adaptive education systems have great potential to improve learning outcomes by increasing accessibility \citep{adaptive-education:8}. 
+In this process of question creation, instructors must make sure that the questions cannot all be of similar difficulty and must range from easy to difficult to ensure optimum learning outcomes. Additionally, questions often need to be replaced continually as content is revised to reflect the latest updates in the domain or because the questions become publicly available. Another aspect that affects learning outcomes is the student's aptitude and pre-existing knowledge. In classroom settings, learning takes place in groups in which some students would be stronger in the concepts the material tests while others would not and would require additional practice and/or instruction. As a result, applying universal pedagogy in such settings is not ideal \citep{personalized-learning:9}.  Adaptive education systems have great potential to improve learning outcomes by increasing accessibility \citep{adaptive-education:8}. 
 
-Neural Question Generation (QG)  \citep{question-generation:10} systems aim to automate the process of question construction by generating novel questions given a particular context, thus reducing time and costs of question generation for educators and test developers. Advanced QG systems with configurable parameters could help offer students custom material based on their individual ability, and act as a foundation for adaptive testing and learning. 
+Question Generation (QG) systems \citep{nqg:15} aim to automate the process of question construction by generating novel questions given a particular context, thus reducing time and costs of question generation for educators and test developers. Advanced QG systems with configurable parameters could help offer students custom material based on their individual ability, and act as a foundation for adaptive testing and learning. 
 
 Recent work in QG has focused on generating quiz-style questions \citep{Quiz:1}, with particular focus on generating questions of selected difficulty levels \citep{Difficulty:3}. However, these techniques have relied on fine-tuning a language model on a task-specific dataset such as SQuAD \citep{squad:11} or RACE \citep{RACE:2}. As a result, these models are limited in their domain of use. Moreover, constructing such datasets that contain thousands of examples, specific to that task, is time-consuming and costly, and thus not a viable means for widespread adoption. In this paper, we propose using GPT-J in a few-shot setting to produce questions that are fluent in linguistic construction, relevant to the input context, and appropriately difficult as desired. We compare our work against a GPT-J model fine-tuned on the task.
 
@@ -88,7 +88,7 @@ In the context of reading comprehension, we look at two types of QG variants. In
 DQG discusses a framework to generate questions given a difficulty level along with the context and answer. Bidirectional LSTMs are used to encode the input. For the decoder, another LSTM is used along with a global difficulty control variable trained on ground truth difficulty labels. The authors use R-Net and BiDAF to assess the difficulty of a question; if both models guess correctly then it is labeled easy; if both models fail then it is labeled hard. 
 
 \subsection{Quiz Style Question Generation}
-As mentioned above, \citep{Quiz:1} focuses on quiz style questions as part of the NewsQuizQA dataset. Unlike prior datasets like SQuAD, prior context does not have a strong impact on the NewsQuizQA dataset with regards to generating questions which reference source text. NewsQuizQA implements Minimum Reference Loss to judge its models, allowing for multiple correct outputs based on how well results match with QA pairs. This metric style allows for some open ended behavior from the model.
+As mentioned above, \citet{Quiz:1} focuses on quiz style questions as part of the NewsQuizQA dataset. Unlike prior datasets like SQuAD, prior context does not have a strong impact on the NewsQuizQA dataset with regards to generating questions which reference source text. NewsQuizQA implements Minimum Reference Loss to judge its models, allowing for multiple correct outputs based on how well results match with QA pairs. This metric style allows for some open ended behavior from the model.
 
 \subsection{Evaluation of Text Generation: A Survey}
 This paper \citep{text-gen-survey:13} serves as a framework for evaluation metrics used to judge machine generated text. The authors delineate three categories of evaluation. Human-centric evaluation involves humans (often experts) judging the quality of generated text, usually through manual review. Untrained automatic evaluation focuses on comparing text generated by models with human written text (such as BLEU, BLEURT and ROUGE).  Machine-learned evaluation involved a machine learning model acting in place of a human judge to determine similarities in human vs. machine (or machine vs. machine) generated texts. All three categories of evaluation are used in our paper, discussed further in the evalatuation section.
@@ -98,7 +98,7 @@ This paper \citep{text-gen-survey:13} serves as a framework for evaluation metri
 
 \subsection{Data}
 
-We use RACE \citep{RACE:2}, a compilation of reading comprehension questions from middle and high school English exams administered to Chinese students, to fine-tune and prompt our GPT-J model. We choose RACE since "the difficulty of RACE questions mostly comes from the understanding of the story but not from the way how the question is asked." \citet{Difficulty:3} (p.2), which is what one finds in the education domain. Moreover, RACE categorizes questions into either \textit{middle} or \textit{high}, based on their relative difficulty. As a result, no manual labeling is required to obtain difficulty labels for questions.
+We use RACE \citep{RACE:2}, a compilation of reading comprehension questions from middle and high school English exams administered to Chinese students, to fine-tune and prompt our GPT-J model. We choose RACE since ``the difficulty of RACE questions mostly comes from the understanding of the story but not from the way how the question is asked'' \citep{Difficulty:3} (p.2), which is what one finds in the education domain. Moreover, RACE categorizes questions into either \textit{middle} or \textit{high}, based on their relative difficulty. As a result, no manual labeling is required to obtain difficulty labels for questions.
 
 Questions that are generic (i.e less than 5 words, non-specific to the context, etc.) are dropped in order to prevent the model from generating irrelevant questions.
 
@@ -106,8 +106,11 @@ For the answer-focused setting, training inputs to the QG model are composed of 
 
 We experiment with various prompts for the few-shot setting (insert future prompt variant info here). An example of the input prompt used in the few-shot setting is shown below: 
 
+% environment
+\begin{small}
+
 \begin{quote}
-\textbf{Context}: "Family" is of course an elastic word. But when British people say that their society is based on family life, they are thinking of "family" in its narrow, peculiarly European sense of mother ,father and children living together alone in their own house as an economic and social unit. Thus, every British marriage indicates the beginning of a new and independent family--hence the tremendous importance of marriage in British life. Readers of novels like Jane Austen's Pride and Prejudice will know that in former times marriage among wealthy families were arranged by the girl's parents, that is, it was the parents' duty to find a suitable husband for their daughter, preferably a rich one, and by skillful encouragement to lead him eventually to ask their permission to marry her. 
+\textbf{Context}: ``Family'' is of course an elastic word. But when British people say that their society is based on family life, they are thinking of ``family'' in its narrow, peculiarly European sense of mother ,father and children living together alone in their own house as an economic and social unit. Thus, every British marriage indicates the beginning of a new and independent family--hence the tremendous importance of marriage in British life. Readers of novels like Jane Austen's Pride and Prejudice will know that in former times marriage among wealthy families were arranged by the girl's parents, that is, it was the parents' duty to find a suitable husband for their daughter, preferably a rich one, and by skillful encouragement to lead him eventually to ask their permission to marry her. 
 
 \textbf{Difficulty}: Hard. 
 
@@ -123,7 +126,10 @@ We experiment with various prompts for the few-shot setting (insert future promp
 
 \end{quote}
 
-In this instance, the true reference question is "What does the author mean by "Family is of course an elastic word"?"
+\end{small}
+
+
+In this instance, the true reference question is "What does the author mean by ``Family is of course an elastic word?''"
 
 \subsection{Model \& Tools}
 
@@ -138,7 +144,7 @@ We perform model training on NYU HPC. All code can be found in our \href{https:/
 
 Generated questions are evaluated along three dimensions: fluency, relevancy, and difficulty. Generally, we use a mix of manual human-centric evaluation, automatic metrics and Machine-Learned metrics as described above.
 
-\textbf{Fluency} determines weather a generated question is easy to read and understand, without taking the source (passage or reference question) into account, and is manually evaluated on a 0-2 Likert scale (ranging from poor to excellent). \textbf{Relevancy} determines whether the generated questions and input reference questions are topically related \citep{relevancy:14}, and is measured using manual evaluation on a 0-1 Likert scale (either relevant or irrelevant) as well as with evaluation metrics including BLEU \citep{BLEU:6}, ROUGE-L \citep{rouge:5} and BLEURT, \citep{bleurt:7} a learned evaluation metric that captures the semantic similarities between two pieces of text. These untrained automatic metrics are computed between the reference question from RACE and the question by GPT-J. \textbf{Difficulty} is determined by checking if the generated question’s difficulty matches that of the input difficulty fed to the model, and is measured as a Machine-Learned metric using a RoBERTa \citep{roberta:12} classifier trained on RACE to classify questions as being either easy or hard. We compare the classifier's output difficulty with the desired difficulty from the input, and evaluate the F1 score.  
+\textbf{Fluency} determines weather a generated question is easy to read and understand, without taking the source (passage or reference question) into account, and is manually evaluated on a 0-2 Likert scale (ranging from poor to excellent). \textbf{Relevancy} determines whether the generated questions and input reference questions are topically related \citep{relevancy:14}, and is measured using manual evaluation on a 0-1 Likert scale (either relevant or irrelevant) as well as with evaluation metrics including BLEU \citep{BLEU:6}, ROUGE-L \citep{rouge:5} and BLEURT-20 \citep{bleurt:7}, a learned evaluation metric that captures the semantic similarities between two pieces of text. These untrained automatic metrics are computed between the reference question from RACE and the question by GPT-J. \textbf{Difficulty} is determined by checking if the generated question’s difficulty matches that of the input difficulty fed to the model, and is measured as a Machine-Learned metric using a RoBERTa \citep{roberta:12} classifier trained on RACE to classify questions as being either easy or hard. Our difficulty classifier achieves an 82\% F1 score trained on ---- questions and and tested on --- questions. We compare the classifier's output difficulty with the desired difficulty from the input, and evaluate the F1 score.  
 
 \section{Results}
 
@@ -159,11 +165,11 @@ Relevancy & & \\
 \hspace{0.5cm} ROUGE-L & - & 16.0 \\
 \hspace{0.5cm} BLEURT & - & 32.31 \\
 Difficulty & & \\
-\hspace{0.5cm} RoBERTa & - & 82.00 \\
+\hspace{0.5cm} RoBERTa & - & ---- \\
 \hline
 \end{tabular}
 \caption{\label{citation-guide}
-Results from GPT-J. Manual fluency and relevancy are averages calculated over manual human evaluation scores. Further untrained metrics are included for relevancy. Difficulty is the F1 score achieved by the difficulty classifier  
+Results from GPT-J. Manual fluency and relevancy are averages calculated over manual human evaluation scores. Further untrained metrics are included for relevancy. Difficulty is the F1 score achieved by the difficulty classifier.  
 }
 \end{table}
 
