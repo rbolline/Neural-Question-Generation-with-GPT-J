@@ -82,6 +82,7 @@ class RaceDataset(Dataset):
         self.dataset = val_df
    
 
+
         # print((self.dataset['answer'].iloc[:5]))
         self.encoded_data, self.labels = encode_data(self.dataset, self.tokenizer)
         self.labels = self.labels.tolist()
