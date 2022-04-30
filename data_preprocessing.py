@@ -72,6 +72,13 @@ class RaceDataset(Dataset):
         ## Rule 4: Exclude questions shorter than 5 words
         val_df = val_df[ val_df.question.str.replace(',','').str.split().str.len() > 5 ]
         
+        ## Rule 5: Added filtering for contexts with less than n associated questions
+        n = 1
+        vc = filt_df['example_id'].value_counts().to_frame()
+        vc.columns = ['Count']
+        vc[vc.Count > n]
+        filt_df = filt_df[filt_df['example_id'].isin(vc.index)]
+        
         self.dataset = val_df
    
 
