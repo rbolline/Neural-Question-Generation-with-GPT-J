@@ -79,6 +79,12 @@ class RaceDataset(Dataset):
         vc = vc[vc.Count > n]
         filt_df = filt_df[filt_df['example_id'].isin(vc.index)]
         
+        ## Rule 7: Exclude questions with answers shorter than 3 words
+        filt_df['answer_text'] = filt_df.apply(lambda x: x['options'][x['answer']], axis=1)
+        filt_df['answer_text_len'] = filt_df['answer_text'].str.replace(',','').str.split().str.len()
+        filt_df = filt_df[ filt_df.answer_text_len >= 3 ]
+        filt_df = filt_df.drop(['answer_text', 'answer_text_len'], axis=1)
+
         self.dataset = val_df
    
 
