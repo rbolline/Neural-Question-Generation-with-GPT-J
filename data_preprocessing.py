@@ -76,7 +76,7 @@ class RaceDataset(Dataset):
         n = 1
         vc = filt_df['example_id'].value_counts().to_frame()
         vc.columns = ['Count']
-        vc[vc.Count > n]
+        vc = vc[vc.Count > n]
         filt_df = filt_df[filt_df['example_id'].isin(vc.index)]
         
         self.dataset = val_df
