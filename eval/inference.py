@@ -54,12 +54,13 @@ def load_dataset(config):
     test_df = race_dataset.get_split(config['data_split'], do_preprocess=True)
 
     ##TODO: Included only for testing. remove later
-    #sample_test_df = test_df[test_df.groupby('context_id').ngroup() < 2]
+    test_df = test_df[test_df.groupby('context_id').ngroup() < 2]
 
     # create set of prompts for question generation
     race_dataset.prepare_data_qg(test_df,
                                  config['num_examples'],
-                                 config['is_train'])
+                                 config['is_train'],
+                                 config['is_answer_focused'])
 
     return race_dataset
 
@@ -90,10 +91,9 @@ def get_model_gen_text(model,
                                             padding=True,
                                             truncation=True).to(device)
                 input_ids = tokenized_inputs.input_ids
+
                 # print("AFTER INPUT IDS")
                 # print(torch.cuda.memory_allocated())
-
-                #print(input_ids)
 
                 gen_tokens = model.generate(input_ids, **model_params)
                 gen_text = tokenizer.batch_decode(gen_tokens)
@@ -102,9 +102,9 @@ def get_model_gen_text(model,
                 del tokenized_inputs
                 del input_ids
                 torch.cuda.empty_cache()
+
                 # print("AFTER DELETING CACHE")
                 # print(torch.cuda.memory_allocated())
-
 
                 batch_dict['gen_text'] = gen_text
 
@@ -155,6 +155,8 @@ def main(config):
     print("**** FINISHED LOADING DATSET!! *******")
     print(test_dataset[0])
 
+    print(len(test_dataset.dataset))
+
     data_loader = torch.utils.data.DataLoader(dataset=test_dataset,
                                               batch_size=config['batch_size'],
                                               collate_fn=test_dataset.collate_fn,
@@ -182,10 +184,6 @@ if __name__ == '__main__':
             raise(exc)
 
     results = main(config)
-
-    # TODO: change this later. save results
-    #with open(r'./sample_output.pickle', 'wb') as fh:
-    #    pickle.dump(results, fh)
 
     results_df = pd.concat(results, axis=0)
     results_df.to_csv(config['savepath'], index=False, header=True)

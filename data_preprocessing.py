@@ -104,11 +104,11 @@ class RaceDataset(Dataset):
 
         return df[is_valid_series]
 
-    def prepare_data_qg(self, df_split, num_examples, is_train):
+    def prepare_data_qg(self, df_split, num_examples, is_train, is_answer_focused):
         '''Prepares the dataset for the Question Generation Task'''
         # prompt format <CONTEXT>\nDifficulty: <label>. Answer: <ANS>. Question: <QUES>
 
-        def create_prompt(group, num_examples, is_train):
+        def create_prompt(group, num_examples, is_train, is_answer_focused):
             """Cretes prompts for each article"""
             example_ids = group['example_id'].tolist()
             prompt_collection = []
@@ -119,12 +119,23 @@ class RaceDataset(Dataset):
 
                 if is_train:
                     # if in training mode then include the question for all examples
-                    include_df.loc[:, 'prompt'] = include_df.apply(lambda row: f"Difficulty: {row['difficulty_label']}. Answer: {row['answer']}. Question: {row['question']}", axis=1)
-                    example_df.loc[:, 'prompt'] = example_df.apply(lambda row: f"Difficulty: {row['difficulty_label']}. Answer: {row['answer']}. Question: {row['question']}", axis=1)
+
+                    if is_answer_focused:
+                        include_df.loc[:, 'prompt'] = include_df.apply(lambda row: f"Difficulty: {row['difficulty_label']}. Answer: {row['answer']}. Question: {row['question']}", axis=1)
+                        example_df.loc[:, 'prompt'] = example_df.apply(lambda row: f"Difficulty: {row['difficulty_label']}. Answer: {row['answer']}. Question: {row['question']}", axis=1)
+                    else:
+                        include_df.loc[:, 'prompt'] = include_df.apply(lambda row: f"Difficulty: {row['difficulty_label']}. Question: {row['question']}", axis=1)
+                        example_df.loc[:, 'prompt'] = example_df.apply(lambda row: f"Difficulty: {row['difficulty_label']}. Question: {row['question']}", axis=1)
+
                 else:
                     # if in test mode then include the questions for all examples except the test example.
-                    include_df.loc[:, 'prompt'] = include_df.apply(lambda row: f"Difficulty: {row['difficulty_label']}. Answer: {row['answer']}. Question: {row['question']}", axis=1)
-                    example_df.loc[:, 'prompt'] = example_df.apply(lambda row: f"Difficulty: {row['difficulty_label']}. Answer: {row['answer']}. Question:", axis=1)
+                    if is_answer_focused:
+                        include_df.loc[:, 'prompt'] = include_df.apply(lambda row: f"Difficulty: {row['difficulty_label']}. Answer: {row['answer']}. Question: {row['question']}", axis=1)
+                        example_df.loc[:, 'prompt'] = example_df.apply(lambda row: f"Difficulty: {row['difficulty_label']}. Answer: {row['answer']}. Question:", axis=1)
+                    else:
+                        include_df.loc[:, 'prompt'] = include_df.apply(lambda row: f"Difficulty: {row['difficulty_label']}. Question: {row['question']}", axis=1)
+                        example_df.loc[:, 'prompt'] = example_df.apply(lambda row: f"Difficulty: {row['difficulty_label']}. Question:", axis=1)
+
 
                 # include the questions from all other examples for the given context
                 # first include questions that are not repeated
@@ -156,7 +167,10 @@ class RaceDataset(Dataset):
 
         prompt_collection = []
         for _, group in df_split.groupby('context_id'):
-            prompt_collection += create_prompt(group, num_examples, is_train)
+            prompt_collection += create_prompt(group,
+                                               num_examples,
+                                               is_train,
+                                               is_answer_focused)
 
 
         prompt_df = pd.concat(prompt_collection, axis=0)
@@ -192,7 +206,8 @@ if __name__ == '__main__':
     # create set of prompts for question generation
     race_dataset.prepare_data_qg(dataset,
                                  config['num_examples'],
-                                 config['is_train'])
+                                 config['is_train'],
+                                 config['is_answer_focused'])
 
     data_loader = torch.utils.data.DataLoader(dataset=race_dataset,
                                               batch_size=config['batch_size'],

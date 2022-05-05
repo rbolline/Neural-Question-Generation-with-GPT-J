@@ -5,6 +5,7 @@ batch_size: 1
 num_examples: 1
 use_opt_model: true
 savepath: ./gptj_race_num_ex1.csv
+is_answer_focused: true
 
 model_params:
   do_sample: true # if set to false then uses greedy decoding
