@@ -1,14 +1,15 @@
 is_train: false
+# train, validation or test
 data_split: test
 batch_size: 1
 num_examples: 1
 use_opt_model: true
-savepath: ./test_output.csv
+savepath: ./gptj_race_num_ex1.csv
 
 model_params:
   do_sample: true # if set to false then uses greedy decoding
   temperature: 1.0 # controls randomness in decoding
-  max_new_tokens: 250 # max num of tokens in generated text
+  max_new_tokens: 200 # max num of tokens in generated text
   top_k: 50
   top_p: 1.0
   length_penalty: 0.8 # if less than 1 then favors shorter sequences
