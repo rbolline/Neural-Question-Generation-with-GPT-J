@@ -36,9 +36,7 @@ val_data = util_methods.encode_data(val_df, tokenizer)
 
 num_epochs = 3
 batch_size = 8
-lr = 1e-5
-lr_lower = 1e-5
-lr_upper = 5e-5
+
 t_args = TrainingArguments('./output', 
                             do_train=True, 
                             num_train_epochs=num_epochs, 
