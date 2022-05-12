@@ -133,7 +133,9 @@ In this instance, the true reference question is "What does the author mean by `
 
 \subsection{Model \& Tools}
 
-For our experiments, we select GPT-J-6B \citep{gpt-j:4} pulled from HuggingFace. We choose this model as it performs well in a zero-shot setting \citep{gpt-j:4} and for its manageable parameter size (6 billion) and open-source code, allowing us to compare performance between a fine-tuned model and a model used in a few-shot setting. During decoding, we use a \textbf{temperature} value of 1.0, \textbf{top-k} of 50, and \textbf{top-p} of 1.0. We set a \textbf{length penalty} of 0.8 to favor shorter sequences
+For our experiments, we select GPT-J-6B \citep{gpt-j:4} pulled from HuggingFace. We choose this model as it performs well in a zero-shot setting \citep{gpt-j:4} and for its manageable parameter size (6 billion) and open-source code, allowing us to compare performance between a fine-tuned model and a model used in a few-shot setting. 
+
+During decoding, we use a \textbf{top-k} of 50, a \textbf{top-p} of 1.0 and a \textbf{temperature} value of 1.0 after hyperparameter turning. We set a \textbf{length penalty} of 0.8 to favor shorter sequences. As part of prompting, we experiment with multi-example prompting (few shot learning), receiving the best results with the most number of example QA pairs passed. See Appendix for all considered hyperparameter ranges.  
 
 For difficulty classification, we use RoBERTa \citep{roberta:12}. The model is trained with a classification head, taking in a combined input of context, question, and answer with the difficulty labels of 'hard' and 'easy'. Training is performed for 3781 examples, evaluation on 222 examples, and testing on 197 samples. The data is preprocessed to follow a similar ruleset to \citet{Difficulty:3}, with some adjustments.
 
@@ -144,7 +146,7 @@ We perform model training on NYU HPC. All code can be found in our \href{https:/
 
 Generated questions are evaluated along three dimensions: fluency, relevancy, and difficulty. Generally, we use a mix of manual human-centric evaluation, automatic metrics and Machine-Learned metrics as described above.
 
-\textbf{Fluency} determines weather a generated question is easy to read and understand, without taking the source (passage or reference question) into account, and is manually evaluated on a 0-2 Likert scale (ranging from poor to excellent). \textbf{Relevancy} determines whether the generated questions and input reference questions are topically related \citep{relevancy:14}, and is measured using manual evaluation on a 0-1 Likert scale (either relevant or irrelevant) as well as with evaluation metrics including BLEU \citep{BLEU:6}, ROUGE-L \citep{rouge:5} and BLEURT-20 \citep{bleurt:7}, a learned evaluation metric that captures the semantic similarities between two pieces of text. These untrained automatic metrics are computed between the reference question from RACE and the question by GPT-J. \textbf{Difficulty} is determined by checking if the generated question’s difficulty matches that of the input difficulty fed to the model, and is measured as a Machine-Learned metric using a RoBERTa \citep{roberta:12} classifier trained on RACE to classify questions as being either easy or hard. Our difficulty classifier achieves an 82\% F1 score trained on ---- questions and and tested on --- questions. We compare the classifier's output difficulty with the desired difficulty from the input, and evaluate the F1 score.  
+\textbf{Fluency} determines weather a generated question is easy to read and understand, without taking the source (passage or reference question) into account, and is manually evaluated on a 0-2 Likert scale (ranging from poor to excellent). \textbf{Relevancy} for the answer-focused setting determines whether the generated questions and input reference questions are topically related \citep{relevancy:14}, and is measured using manual evaluation on a 0-1 Likert scale (either relevant or irrelevant) as well as with evaluation metrics including BLEU \citep{BLEU:6}, ROUGE-L \citep{rouge:5}, sacreBLEU, and BLEURT-20 \citep{bleurt:7}, a learned evaluation metric that captures the semantic similarities between two pieces of text. These untrained automatic metrics are computed between the reference question from RACE and the question by GPT-J. For the general setting, Relevancy is only determined through manual evaluation by judging the relevancy of the generated question to the context passage. \textbf{Difficulty} is determined by checking if the generated question’s difficulty matches that of the input difficulty fed to the model, and is measured as a Machine-Learned metric using a RoBERTa \citep{roberta:12} classifier trained on RACE to classify questions as being either easy or hard. Our difficulty classifier achieves an --\% F1 score trained on ---- questions and and tested on --- questions. We compare the classifier's output difficulty with the desired difficulty from the input, and evaluate the F1 score.  
 
 \section{Results}
 
@@ -152,7 +154,7 @@ Generated questions are evaluated along three dimensions: fluency, relevancy, an
 \centering
 \begin{tabular}{lcc}
 \hline
-\textbf{Metric} & \textbf{Finetuned} & \textbf{One-Shot}\\
+\textbf{Metric} & \textbf{Finetuned} & \textbf{Few-Shot}\\
 \hline
 Fluency & & \\ 
 \hspace{0.5cm} Manual & - & 1.27 \\
@@ -164,16 +166,35 @@ Relevancy & & \\
 \hspace{0.5cm} BLEU-4 & - & 0.00 \\
 \hspace{0.5cm} ROUGE-L & - & 16.0 \\
 \hspace{0.5cm} BLEURT & - & 32.31 \\
+\hspace{0.5cm} sacreBLEU & - & - \\
 Difficulty & & \\
-\hspace{0.5cm} RoBERTa & - & ---- \\
+\hspace{0.5cm} RoBERTa & - & - \\
+\hline
+\end{tabular}
+\end{table}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lcc}
+\hline
+\textbf{Metric} & \textbf{Finetuned} & \textbf{Few-Shot}\\
+\hline
+Fluency & & \\ 
+\hspace{0.5cm} Manual & - & - \\
+Relevancy & & \\
+\hspace{0.5cm} Manual & - & - \\
+Difficulty & & \\
+\hspace{0.5cm} RoBERTa & - & - \\
 \hline
 \end{tabular}
 \caption{\label{citation-guide}
-Results from GPT-J. Manual fluency and relevancy are averages calculated over manual human evaluation scores. Further untrained metrics are included for relevancy. Difficulty is the F1 score achieved by the difficulty classifier.  
+Evaluation results for the answer focused (top) and general (bottom) settings on GPT-J. Manual fluency and relevancy scores are averages of manual human evaluation scores. Further untrained metrics are included for relevancy. Difficulty is the F1 score achieved by the difficulty classifier.  
 }
 \end{table}
 
-Results on all three evaluation metrics are included above. See Appendix on page 5 for example generated questions. 
+Results on all three evaluation metrics are included above. See Table 2 in the Appendix for example generated questions and Table 3 for specifics on prompts used in human evaluations.
+
+\section{Conclusion}
 
 \section{Collaboration}
 Credit to Sukrit Rao for formulating the project question. He developed and executed the inference scripts for the GPT-J question generating models, prompt design, and developed scripts for the automated evaluation metrics.
@@ -194,34 +215,51 @@ We would like to thank our Professor Sam Bowman and TA Richard Pang for their as
 
 \clearpage
 
+
+\begin{table*}[!hbt]
+    \centering
+    \begin{tabular}{|p{3cm}|p{4cm}|p{4cm}|p{3.5cm}|}
+        \hline
+        \textbf{Desired Difficulty} & \textbf{Reference Question} & \textbf{Generated Question} & \textbf{Answer}\\
+        \hline
+        Hard & 
+        What is special about the pens produced in 1234 PENS? & 
+        Why would you choose 1234 PENS? &  
+        Their material is less harmful to the earth\\
+        \hline
+        Hard & 
+        What would be the best title for the passage?  & 
+        How is it to climb from the Tibetan side of Mt. Everest? & 
+        California teen becomes youngest to climb Mt. Everest\\
+        \hline
+        Easy & 
+        What can be the best title for the passage ? & 
+        What do you think is the moral of the story? & 
+        Love Saves All\\
+        \hline
+    \end{tabular}
+    \caption{\label{citation-guide}
+    Questions generated by GPT-J in a one-shot setting}
+    \end{table*}
+
+\begin{table*}[!hbt]
+\centering
+\begin{tabular}{|p{1.5cm}|p{1cm}|p{3cm}|p{3cm}|p{3cm}|p{1.5cm}|p{1.5cm}|}
+\hline
+\textbf{Example ID} & \textbf{Article} & \textbf{Answer} & \textbf{Question} & \textbf{Generated Question} & \textbf{Fluency} & \textbf{Relevancy} \\
+\hline
+middle70-2 & article & Because she wanted to keep the fact a secret	& Why did the boy's mother never cut her hair? & Difficulty: Easy. Answer: Because she wanted to keep the fact a secret. Question: If the main title given in the passage is :, why?	& \{0, 1, 2\} & \{0, 1\}  \\
+\hline
+
+\end{tabular}
+\captionsetup{margin={0.1cm}}
+\caption{\label{citation-guide} 
+An example row from the manual evaluation worksheet. The information provided in each row is used by human raters to score the generated question on Fluency and Relevancy. A Google Sheets file loaded with all the generated questions and associated metadata is utilized. All manual evaluation was conducted by the three authors of this paper. }
+
+\end{table*}
+
 \appendix
 \section{Appendix}
-
-\begin{table}[!hbt]
-\centering
-\begin{tabular}{|p{3cm}|p{4cm}|p{4cm}|p{3.5cm}|}
-\hline
-\textbf{Desired Difficulty} & \textbf{Reference Question} & \textbf{Generated Question} & \textbf{Answer}\\
-\hline
-Hard & 
-What is special about the pens produced in 1234 PENS? & 
-Why would you choose 1234 PENS? &  
-Their material is less harmful to the earth\\
-\hline
-Hard & 
-What would be the best title for the passage?  & 
-How is it to climb from the Tibetan side of Mt. Everest? & 
-California teen becomes youngest to climb Mt. Everest\\
-\hline
-Easy & 
-What can be the best title for the passage ? & 
-What do you think is the moral of the story? & 
-Love Saves All\\
-\hline
-\end{tabular}
-\caption{\label{citation-guide}
-Questions generated by GPT-J in a one-shot setting}
-\end{table}
 
 \clearpage
 
