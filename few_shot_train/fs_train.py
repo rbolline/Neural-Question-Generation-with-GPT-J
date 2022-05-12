@@ -398,10 +398,9 @@ def main(config):
     size_all_mb = (param_size + buffer_size) / 1024**2
     print('model size: {:.3f}MB'.format(size_all_mb))
 
-    num_epochs = 3
+    num_epochs = config['num_train_epochs']
     add_adapters(gpt)
     gpt.to(device)
-
 
     gpt.gradient_checkpointing_enable()
 
@@ -410,45 +409,52 @@ def main(config):
 
     with torch.cuda.amp.autocast():
        counter = 0
-       for batch_dict in tqdm(train_data_loader):
-            batch_prompts = batch_dict['prompt']
-            batch_questions = batch_dict['question']
-            print(f'\t\tTokenizing Inputs...')
+       for epoch in num_epochs:
+            for batch_dict in tqdm(train_data_loader):
+                batch_prompts = batch_dict['prompt']
+                batch_questions = batch_dict['question']
+                print(f'\t\tTokenizing Inputs...')
 
-            tokenized_inputs = tokenizer(batch_prompts,
-                                        return_tensors="pt",
-                                        padding=True,
-                                        truncation=True).to(device)
-            # pred_input_ids = tokenized_inputs.input_ids
+                tokenized_inputs = tokenizer(batch_prompts,
+                                            return_tensors="pt",
+                                            padding=True,
+                                            truncation=True).to(device)
+                # pred_input_ids = tokenized_inputs.input_ids
 
-            tokenized_labels = tokenizer(batch_questions,
-                                        return_tensors="pt",
-                                        padding=True,
-                                        truncation=True).to(device)
-            # label_input_ids = tokenized_labels.input_ids
+                tokenized_labels = tokenizer(batch_questions,
+                                            return_tensors="pt",
+                                            padding=True,
+                                            truncation=True).to(device)
+                # label_input_ids = tokenized_labels.input_ids
 
 
-            # break
-            # batch = tokenizer(row["content"], truncation=True, max_length=128, return_tensors='pt')
-            # batch = {k: v.cuda() for k, v in batch.items()}
+                # break
+                # batch = tokenizer(row["content"], truncation=True, max_length=128, return_tensors='pt')
+                # batch = {k: v.cuda() for k, v in batch.items()}
 
-            out = gpt.forward(**tokenized_inputs,)
+                out = gpt.forward(**tokenized_inputs,)
 
-            loss = F.cross_entropy(out.logits[:, :-1, :].flatten(0, -2), tokenized_inputs['input_ids'][:, 1:].flatten(),
-                                reduction='mean')
-            #print(loss)
-            print(" **** LOSS *****", loss)
-            loss.backward()
+                loss = F.cross_entropy(out.logits[:, :-1, :].flatten(0, -2), tokenized_inputs['input_ids'][:, 1:].flatten(),
+                                    reduction='mean')
+                #print(loss)
+                # print(" **** LOSS *****", loss)
+                loss.backward()
 
-            optimizer.step()
-            optimizer.zero_grad()
-            
-            counter += 1
-            if counter == 3:
-                break
-            
+                optimizer.step()
+                optimizer.zero_grad()
 
-    print("**** FINISHED TRAINING MODEL!! *******")
+                counter += 1
+                if counter % 100:
+                    print(f"STEP {counter} COMPLETED!")
+                    # break
+
+            print(f"EPOCH {epoch} COMPLETED. Steps={counter}!")
+
+            gpt.save_pretrained(save_directory=config['model_save_directory'], save_config=True)
+            print(f"SAVED MODEL AT {config['model_save_directory']}!")
+
+
+    print(f"**** FINISHED TRAINING MODEL!! FINAL LOSS={loss.item()}*******")
     # gen text from the model
     # gen_text = get_model_gen_text(model, tokenizer, test_data_loader, config)
 

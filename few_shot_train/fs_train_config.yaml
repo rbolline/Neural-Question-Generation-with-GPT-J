@@ -6,8 +6,9 @@ batch_size: 1
 num_examples: 1
 use_opt_model: true
 savepath: ./gptj_race_num_ex1.csv
-outpath: ./gpt_finetuned_output
+model_save_directory: ./gpt_finetuned_output
 is_answer_focused: true
+num_train_epochs: 25
 
 model_params:
   do_sample: true # if set to false then uses greedy decoding
