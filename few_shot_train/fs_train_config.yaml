@@ -1,11 +1,14 @@
 is_train: true
 # train, validation or test
-data_split: train
+train_data_split: train
+test_data_split: test
 batch_size: 1
 num_examples: 1
 use_opt_model: true
 savepath: ./gptj_race_num_ex1.csv
+model_save_directory: ./gpt_finetuned_output
 is_answer_focused: true
+num_train_epochs: 25
 
 model_params:
   do_sample: true # if set to false then uses greedy decoding
@@ -15,4 +18,3 @@ model_params:
   top_p: 1.0
   length_penalty: 0.8 # if less than 1 then favors shorter sequences
   return_dict_in_generate: false
-

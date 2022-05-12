@@ -152,7 +152,7 @@ def main(config):
     # prepare the dataset of prompts
     test_dataset = load_dataset(config)
 
-    print("**** FINISHED LOADING DATSET!! *******")
+    print("**** FINISHED LOADING DATASET!! *******")
     print(test_dataset[0])
 
     print(len(test_dataset.dataset))
