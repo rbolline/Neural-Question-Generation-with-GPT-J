@@ -1,6 +1,6 @@
-is_train: false
+is_train: true
 # train, validation or test
-data_split: test
+data_split: train
 batch_size: 1
 num_examples: 1
 use_opt_model: true
@@ -9,8 +9,8 @@ is_answer_focused: true
 
 model_params:
   do_sample: true # if set to false then uses greedy decoding
-  temperature: 1.0 # controls randomness in decoding
-  max_new_tokens: 200 # max num of tokens in generated text
+  temperature: 0.1 # controls randomness in decoding
+  max_new_tokens: 150 # max num of tokens in generated text
   top_k: 50
   top_p: 1.0
   length_penalty: 0.8 # if less than 1 then favors shorter sequences

@@ -356,7 +356,7 @@ def main(config):
 
     # Define PAD Token = EOS Token = 50256
     tokenizer.pad_token = tokenizer.eos_token
-    model.config.pad_token_id = model.config.eos_token_id
+    #model.config.pad_token_id = model.config.eos_token_id
 
     print("**** FINISHED LOADING TOKENIZER!! *******")
 
@@ -409,7 +409,8 @@ def main(config):
     # ce_loss = nn.CrossEntropyLoss()
 
     with torch.cuda.amp.autocast():
-        for batch_dict in tqdm(train_data_loader):
+       counter = 0
+       for batch_dict in tqdm(train_data_loader):
             batch_prompts = batch_dict['prompt']
             batch_questions = batch_dict['question']
             print(f'\t\tTokenizing Inputs...')
@@ -435,13 +436,17 @@ def main(config):
 
             loss = F.cross_entropy(out.logits[:, :-1, :].flatten(0, -2), tokenized_inputs['input_ids'][:, 1:].flatten(),
                                 reduction='mean')
-            print(loss)
+            #print(loss)
+            print(" **** LOSS *****", loss)
             loss.backward()
 
             optimizer.step()
             optimizer.zero_grad()
-
-            break
+            
+            counter += 1
+            if counter == 3:
+                break
+            
 
     print("**** FINISHED TRAINING MODEL!! *******")
     # gen text from the model
@@ -466,5 +471,5 @@ if __name__ == '__main__':
 
     results = main(config)
 
-    results_df = pd.concat(results, axis=0)
-    results_df.to_csv(config['savepath'], index=False, header=True)
+    #results_df = pd.concat(results, axis=0)
+    #results_df.to_csv(config['savepath'], index=False, header=True)
